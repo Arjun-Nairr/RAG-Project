@@ -1,0 +1,21 @@
+# secrets
+.env
+*.env
+!.env.example
+
+# python
+venv/
+__pycache__/
+*.pyc
+
+# node
+node_modules/
+dist/
+
+# generated/runtime data - not source, shouldn't be in version control
+data/chroma/
+data/study_sets/
+
+# stray cache from an unrelated global wrangler deploy hook - can contain
+# account-identifying info, never belongs in this repo
+.wrangler/
