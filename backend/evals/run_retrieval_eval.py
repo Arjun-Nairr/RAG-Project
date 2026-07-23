@@ -6,7 +6,7 @@ Usage: venv/Scripts/python.exe -m evals.run_retrieval_eval [collection_name] [to
 
 import sys
 
-from app import embedding, vector_store
+from app import qa
 from evals.eval_set import EVAL_QUESTIONS
 
 
@@ -15,8 +15,7 @@ def run(collection_name: str, top_k: int = 5) -> dict:
     details = []
 
     for item in EVAL_QUESTIONS:
-        query_vector = embedding.embed([item["question"]])[0]
-        results = vector_store.query(collection_name, query_vector, top_k=top_k)
+        results = qa.retrieve(collection_name, item["question"], top_k)
         sources = [r["source"] for r in results]
 
         rank = next(

@@ -1,0 +1,652 @@
+[
+  {
+    "question": "What is multi-head attention?",
+    "expected_source": "attention_is_all_you_need.pdf",
+    "context": [
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "This makes\nit more difficult to learn dependencies between distant positions [ 12]. In the Transformer this is\nreduced to a constant number of operations, albeit at the cost of reduced effective resolution due\nto averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as\ndescribed in section 3.2.\nSelf-attention, sometimes called intra-attention is an attention mechanism relating different positions\nof a single sequence in order to compute a representation of the sequence. Self-attention has been\nused successfully in a variety of tasks including"
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "(right) Multi-Head Attention consists of several\nattention layers running in parallel.\nof the values, where the weight assigned to each value is computed by a compatibility function of the\nquery with the corresponding key.\n3.2.1 Scaled Dot-Product Attention\nWe call our particular attention \"Scaled Dot-Product Attention\" (Figure 2). The input consists of\nqueries and keys of dimension dk, and values of dimension dv. We compute the dot products of the\nquery with all keys, divide each by \u221adk, and apply a softmax function to obtain the weights on the\nvalues.\nIn practice, we compute the attention function on a set of queries simultaneously, packed together\ninto a matrix Q. The keys and values are also packed together into matrices K and V ."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "Due to the reduced dimension of each head, the total computational cost\nis similar to that of single-head attention with full dimensionality.\n3.2.3 Applications of Attention in our Model\nThe Transformer uses multi-head attention in three different ways:\n\u2022 In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer,\nand the memory keys and values come from the output of the encoder. This allows every\nposition in the decoder to attend over all positions in the input sequence. This mimics the\ntypical encoder-decoder attention mechanisms in sequence-to-sequence models such as\n[38, 2, 9].\n\u2022 The encoder contains self-attention layers. In a self-attention layer all of the keys, values\nand queries come from the same place, in this case, the output of the previous layer in the\nencoder."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "These are concatenated and once again projected, resulting in the final values, as\ndepicted in Figure 2.\nMulti-head attention allows the model to jointly attend to information from different representation\nsubspaces at different positions. With a single attention head, averaging inhibits this.\nMultiHead(Q, K, V) = Concat(head1, ...,headh)W O\nwhere headi = Attention(QW Q\ni , KWK\ni , V WV\ni )\nWhere the projections are parameter matricesW Q\ni \u2208 Rdmodel\u00d7dk, W K\ni \u2208 Rdmodel\u00d7dk, W V\ni \u2208 Rdmodel\u00d7dv\nand W O \u2208 Rhdv\u00d7dmodel.\nIn this work we employ h = 8 parallel attention layers, or heads. For each of these we use\ndk = dv = dmodel/h = 64."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "With a single attention head, averaging inhibits this.\nMultiHead(Q, K, V) = Concat(head1, ...,headh)W O\nwhere headi = Attention(QW Q\ni , KWK\ni , V WV\ni )\nWhere the projections are parameter matricesW Q\ni \u2208 Rdmodel\u00d7dk, W K\ni \u2208 Rdmodel\u00d7dk, W V\ni \u2208 Rdmodel\u00d7dv\nand W O \u2208 Rhdv\u00d7dmodel.\nIn this work we employ h = 8 parallel attention layers, or heads. For each of these we use\ndk = dv = dmodel/h = 64. Due to the reduced dimension of each head, the total computational cost\nis similar to that of single-head attention with full dimensionality.\n3.2.3 Applications of Attention in our Model\nThe Transformer uses multi-head attention in three different ways:\n\u2022 In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer,\nand the memory keys and values come from the output of the encoder."
+      }
+    ]
+  },
+  {
+    "question": "What is scaled dot-product attention?",
+    "expected_source": "attention_is_all_you_need.pdf",
+    "context": [
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "While the two are similar in theoretical complexity, dot-product attention is\nmuch faster and more space-efficient in practice, since it can be implemented using highly optimized\nmatrix multiplication code.\nWhile for small values of dk the two mechanisms perform similarly, additive attention outperforms\ndot product attention without scaling for larger values of dk [3]. We suspect that for large values of\ndk, the dot products grow large in magnitude, pushing the softmax function into regions where it has\nextremely small gradients 4."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "(right) Multi-Head Attention consists of several\nattention layers running in parallel.\nof the values, where the weight assigned to each value is computed by a compatibility function of the\nquery with the corresponding key.\n3.2.1 Scaled Dot-Product Attention\nWe call our particular attention \"Scaled Dot-Product Attention\" (Figure 2). The input consists of\nqueries and keys of dimension dk, and values of dimension dv. We compute the dot products of the\nquery with all keys, divide each by \u221adk, and apply a softmax function to obtain the weights on the\nvalues.\nIn practice, we compute the attention function on a set of queries simultaneously, packed together\ninto a matrix Q. The keys and values are also packed together into matrices K and V ."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "Additive attention computes the compatibility function using a feed-forward network with\na single hidden layer. While the two are similar in theoretical complexity, dot-product attention is\nmuch faster and more space-efficient in practice, since it can be implemented using highly optimized\nmatrix multiplication code.\nWhile for small values of dk the two mechanisms perform similarly, additive attention outperforms\ndot product attention without scaling for larger values of dk [3]."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "To counteract this effect, we scale the dot products by 1\u221adk\n.\n3.2.2 Multi-Head Attention\nInstead of performing a single attention function with dmodel-dimensional keys, values and queries,\nwe found it beneficial to linearly project the queries, keys and values h times with different, learned\nlinear projections to dk, dk and dv dimensions, respectively. On each of these projected versions of\nqueries, keys and values we then perform the attention function in parallel, yielding dv-dimensional\n4To illustrate why the dot products get large, assume that the components of q and k are independent random\nvariables with mean 0 and variance 1. Then their dot product, q \u00b7 k = Pdk\ni=1 qiki, has mean 0 and variance dk.\n4 output values."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "We suspect that for large values of\ndk, the dot products grow large in magnitude, pushing the softmax function into regions where it has\nextremely small gradients 4. To counteract this effect, we scale the dot products by 1\u221adk\n.\n3.2.2 Multi-Head Attention\nInstead of performing a single attention function with dmodel-dimensional keys, values and queries,\nwe found it beneficial to linearly project the queries, keys and values h times with different, learned\nlinear projections to dk, dk and dv dimensions, respectively."
+      }
+    ]
+  },
+  {
+    "question": "How does positional encoding work in the Transformer?",
+    "expected_source": "attention_is_all_you_need.pdf",
+    "context": [
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "At each step the model is auto-regressive\n[10], consuming the previously generated symbols as additional input when generating the next.\n2 Figure 1: The Transformer - model architecture.\nThe Transformer follows this overall architecture using stacked self-attention and point-wise, fully\nconnected layers for both the encoder and decoder, shown in the left and right halves of Figure 1,\nrespectively.\n3.1 Encoder and Decoder Stacks\nEncoder: The encoder is composed of a stack of N = 6 identical layers. Each layer has two\nsub-layers."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "Figure 1: The Transformer - model architecture.\nThe Transformer follows this overall architecture using stacked self-attention and point-wise, fully\nconnected layers for both the encoder and decoder, shown in the left and right halves of Figure 1,\nrespectively.\n3.1 Encoder and Decoder Stacks\nEncoder: The encoder is composed of a stack of N = 6 identical layers. Each layer has two\nsub-layers. The first is a multi-head self-attention mechanism, and the second is a simple, position-\nwise fully connected feed-forward network. We employ a residual connection [11] around each of\nthe two sub-layers, followed by layer normalization [ 1]. That is, the output of each sub-layer is\nLayerNorm(x + Sublayer(x)), where Sublayer(x) is the function implemented by the sub-layer\nitself."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "This makes\nit more difficult to learn dependencies between distant positions [ 12]. In the Transformer this is\nreduced to a constant number of operations, albeit at the cost of reduced effective resolution due\nto averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as\ndescribed in section 3.2.\nSelf-attention, sometimes called intra-attention is an attention mechanism relating different positions\nof a single sequence in order to compute a representation of the sequence. Self-attention has been\nused successfully in a variety of tasks including"
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "Due to the reduced dimension of each head, the total computational cost\nis similar to that of single-head attention with full dimensionality.\n3.2.3 Applications of Attention in our Model\nThe Transformer uses multi-head attention in three different ways:\n\u2022 In \"encoder-decoder attention\" layers, the queries come from the previous decoder layer,\nand the memory keys and values come from the output of the encoder. This allows every\nposition in the decoder to attend over all positions in the input sequence. This mimics the\ntypical encoder-decoder attention mechanisms in sequence-to-sequence models such as\n[38, 2, 9].\n\u2022 The encoder contains self-attention layers. In a self-attention layer all of the keys, values\nand queries come from the same place, in this case, the output of the previous layer in the\nencoder."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "There is mini-\nmal difference between the pre-trained architec-\nture and the \ufb01nal downstream architecture.\nModel Architecture BERT\u2019s model architec-\nture is a multi-layer bidirectional Transformer en-\ncoder based on the original implementation de-\nscribed in Vaswani et al. (2017) and released in\nthe tensor2tensor library.1 Because the use\nof Transformers has become common and our im-\nplementation is almost identical to the original,\nwe will omit an exhaustive background descrip-\ntion of the model architecture and refer readers to\nVaswani et al. (2017) as well as excellent guides\nsuch as \u201cThe Annotated Transformer.\u201d2\nIn this work, we denote the number of layers\n(i.e., Transformer blocks) asL, the hidden size as\nH, and the number of self-attention heads as A.3\nWe"
+      }
+    ]
+  },
+  {
+    "question": "What is the BERT pretraining objective?",
+    "expected_source": "bert.pdf",
+    "context": [
+      {
+        "source": "bert.pdf",
+        "text": "Dur-\ning pre-training, the model is trained on unlabeled\ndata over different pre-training tasks. For \ufb01ne-\ntuning, the BERT model is \ufb01rst initialized with\nthe pre-trained parameters, and all of the param-\neters are \ufb01ne-tuned using labeled data from the\ndownstream tasks. Each downstream task has sep-\narate \ufb01ne-tuned models, even though they are ini-\ntialized with the same pre-trained parameters. The\nquestion-answering example in Figure 1 will serve\nas a running example for this section.\nA distinctive feature of BERT is its uni\ufb01ed ar-\nchitecture across different tasks."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "BiLSTM on top of the \u201cLTR + No\nNSP\u201d model during \ufb01ne-tuning.\nablation studies can be found in Appendix C.\n5.1 Effect of Pre-training Tasks\nWe demonstrate the importance of the deep bidi-\nrectionality of BERT by evaluating two pre-\ntraining objectives using exactly the same pre-\ntraining data, \ufb01ne-tuning scheme, and hyperpa-\nrameters as BERTBASE :\nNo NSP : A bidirectional model which is trained\nusing the \u201cmasked LM\u201d (MLM) but without the\n\u201cnext sentence prediction\u201d (NSP) task.\nLTR & No NSP: A left-context-only model which\nis trained using a standard Left-to-Right (LTR)\nLM, rather than an MLM. The left-only constraint\nwas also applied at \ufb01ne-tuning, because removing\nit introduced a pre-train/\ufb01ne-tune mismatch that\ndegraded downstream performance."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "In fact, many of the design decisions in BERT\nwere intentionally made to make it as close to\nGPT as possible so that the two methods could be\nminimally compared. The core argument of this\nwork is that the bi-directionality and the two pre-\ntraining tasks presented in Section 3.1 account for\nthe majority of the empirical improvements, but\nwe do note that there are several other differences\nbetween how BERT and GPT were trained:\n\u2022 GPT is trained on the BooksCorpus (800M\nwords); BERT is trained on the BooksCor-\npus (800M words) and Wikipedia (2,500M\nwords).\n\u2022 GPT uses a sentence separator ( [SEP]) and\nclassi\ufb01er token ( [CLS]) which are only in-\ntroduced at \ufb01ne-tuning time; BERT learns\n[SEP], [CLS]"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "bi-directionality and the two pre-\ntraining tasks presented in Section 3.1 account for\nthe majority of the empirical improvements, but\nwe do note that there are several other differences\nbetween how BERT and GPT were trained:\n\u2022 GPT is trained on the BooksCorpus (800M\nwords); BERT is trained on the BooksCor-\npus (800M words) and Wikipedia (2,500M\nwords).\n\u2022 GPT uses a sentence separator ( [SEP]) and\nclassi\ufb01er token ( [CLS]) which are only in-\ntroduced at \ufb01ne-tuning time; BERT learns\n[SEP], [CLS] and sentence A/B embed-\ndings during pre-training.\n\u2022 GPT was trained for 1M steps with a batch\nsize of 32,000 words; BERT was trained for\n1M steps with a batch size of 128,000 words.\n\u2022 GPT used the same learning rate of 5e-5 for\nall \ufb01ne-tuning experiments; BERT chooses a\ntask-speci\ufb01c \ufb01ne-tuning learning rate which\nperforms the best on the development set.\nTo isolate the effect of these differences, we per-\nform ablation experiments in Section 5.1 which\ndemonstrate that the majority of the"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "\u201cLTR & No NSP\u201d is\ntrained as a left-to-right LM without the next sentence\nprediction, like OpenAI GPT. \u201c+ BiLSTM\u201d adds a ran-\ndomly initialized BiLSTM on top of the \u201cLTR + No\nNSP\u201d model during \ufb01ne-tuning.\nablation studies can be found in Appendix C.\n5.1 Effect of Pre-training Tasks\nWe demonstrate the importance of the deep bidi-\nrectionality of BERT by evaluating two pre-\ntraining objectives using exactly the same pre-\ntraining data, \ufb01ne-tuning scheme, and hyperpa-\nrameters as BERTBASE :\nNo NSP : A bidirectional model which is trained\nusing the \u201cmasked LM\u201d (MLM) but without the\n\u201cnext sentence prediction\u201d (NSP) task.\nLTR & No NSP: A"
+      }
+    ]
+  },
+  {
+    "question": "What is masked language modeling?",
+    "expected_source": "bert.pdf",
+    "context": [
+      {
+        "source": "bert.pdf",
+        "text": "In Proceedings of the IEEE\ninternational conference on computer vision , pages\n19\u201327.\nAppendix for \u201cBERT: Pre-training of\nDeep Bidirectional Transformers for\nLanguage Understanding\u201d\nWe organize the appendix into three sections:\n\u2022 Additional implementation details for BERT\nare presented in Appendix A;\n\u2022 Additional details for our experiments are\npresented in Appendix B; and\n\u2022 Additional ablation studies are presented in\nAppendix C.\nWe present additional ablation studies for\nBERT including:\n\u2013 Effect of Number of Training Steps; and\n\u2013 Ablation for Different Masking Proce-\ndures.\nA Additional Details for BERT\nA.1 Illustration of the Pre-training Tasks\nWe provide examples of the pre-training tasks in\nthe following.\nMasked LM and the Masking Procedure As-\nsuming the unlabeled sentence is my dog is\nhairy, and during the random masking procedure\nwe chose the 4-th token (which"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "The purpose of this is to bias the\nrepresentation towards the actual observed\nword.\nThe advantage of this procedure is that the\nTransformer encoder does not know which words\nit will be asked to predict or which have been re-\nplaced by random words, so it is forced to keep\na distributional contextual representation of ev-\nery input token. Additionally, because random\nreplacement only occurs for 1.5% of all tokens\n(i.e., 10% of 15%), this does not seem to harm\nthe model\u2019s language understanding capability. In\nSection C.2, we evaluate the impact this proce-\ndure.\nCompared to standard langauge model training,\nthe masked LM only make predictions on 15% of\ntokens in each batch, which suggests that more\npre-training steps may be required for the model"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "The\nmasked language model randomly masks some of\nthe tokens from the input, and the objective is to\npredict the original vocabulary id of the masked\narXiv:1810.04805v2  [cs.CL]  24 May 2019 word based only on its context. Unlike left-to-\nright language model pre-training, the MLM ob-\njective enables the representation to fuse the left\nand the right context, which allows us to pre-\ntrain a deep bidirectional Transformer. In addi-\ntion to the masked language model, we also use\na \u201cnext sentence prediction\u201d task that jointly pre-\ntrains text-pair representations. The contributions\nof our paper are as follows:\n\u2022 We demonstrate the importance of bidirectional\npre-training for language representations."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "In all of our\nexperiments, we mask 15% of all WordPiece to-\nkens in each sequence at random. In contrast to\ndenoising auto-encoders (Vincent et al., 2008), we\nonly predict the masked words rather than recon-\nstructing the entire input.\nAlthough this allows us to obtain a bidirec-\ntional pre-trained model, a downside is that we\nare creating a mismatch between pre-training and\n\ufb01ne-tuning, since the [MASK] token does not ap-\npear during \ufb01ne-tuning. To mitigate this, we do\nnot always replace \u201cmasked\u201d words with the ac-\ntual [MASK] token."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "EM\u2019\nC\n T1\n T[SEP]...\n TN\n T1\u2019 ...\n TM\u2019\n[CLS] Tok 1  [SEP]... Tok N Tok 1 ... TokM\nMasked Sentence A Masked Sentence B\nPre-training Fine-Tuning\nNSP Mask LM Mask LM\nUnlabeled Sentence A and B Pair \nSQuAD\nQuestion Answer Pair\nNERMNLI\nFigure 1: Overall pre-training and \ufb01ne-tuning procedures for BERT. Apart from output layers, the same architec-\ntures are used in both pre-training and \ufb01ne-tuning. The same pre-trained model parameters are used to initialize\nmodels for different down-stream tasks. During \ufb01ne-tuning, all parameters are \ufb01ne-tuned."
+      }
+    ]
+  },
+  {
+    "question": "How does BERT differ from GPT in terms of bidirectionality?",
+    "expected_source": "bert.pdf",
+    "context": [
+      {
+        "source": "bert.pdf",
+        "text": "In fact, many of the design decisions in BERT\nwere intentionally made to make it as close to\nGPT as possible so that the two methods could be\nminimally compared. The core argument of this\nwork is that the bi-directionality and the two pre-\ntraining tasks presented in Section 3.1 account for\nthe majority of the empirical improvements, but\nwe do note that there are several other differences\nbetween how BERT and GPT were trained:\n\u2022 GPT is trained on the BooksCorpus (800M\nwords); BERT is trained on the BooksCor-\npus (800M words) and Wikipedia (2,500M\nwords).\n\u2022 GPT uses a sentence separator ( [SEP]) and\nclassi\ufb01er token ( [CLS]) which are only in-\ntroduced at \ufb01ne-tuning time; BERT learns\n[SEP], [CLS]"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "primarily report results on two model sizes:\nBERTBASE (L=12, H=768, A=12, Total Param-\neters=110M) and BERTLARGE (L=24, H=1024,\nA=16, Total Parameters=340M).\nBERTBASE was chosen to have the same model\nsize as OpenAI GPT for comparison purposes.\nCritically, however, the BERT Transformer uses\nbidirectional self-attention, while the GPT Trans-\nformer uses constrained self-attention where every\ntoken can only attend to context to its left.4\n1https://github.com/tensor\ufb02ow/tensor2tensor\n2http://nlp.seas.harvard.edu/2018/04/03/attention.html\n3In all cases we set the feed-forward/\ufb01lter size to be 4H,\ni.e., 3072 for the H = 768 and 4096 for the H = 1024.\n4We note that in the literature the bidirectional Trans-"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "The comparisons be-\ntween the model architectures are shown visually\nin Figure 3. Note that in addition to the architec-\nture differences, BERT and OpenAI GPT are \ufb01ne-\ntuning approaches, while ELMo is a feature-based\napproach.\nThe most comparable existing pre-training\nmethod to BERT is OpenAI GPT, which trains a\nleft-to-right Transformer LM on a large text cor-\npus. In fact, many of the design decisions in BERT\nwere intentionally made to make it as close to\nGPT as possible so that the two methods could be\nminimally compared. The core argument of this\nwork is that the"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "bi-directionality and the two pre-\ntraining tasks presented in Section 3.1 account for\nthe majority of the empirical improvements, but\nwe do note that there are several other differences\nbetween how BERT and GPT were trained:\n\u2022 GPT is trained on the BooksCorpus (800M\nwords); BERT is trained on the BooksCor-\npus (800M words) and Wikipedia (2,500M\nwords).\n\u2022 GPT uses a sentence separator ( [SEP]) and\nclassi\ufb01er token ( [CLS]) which are only in-\ntroduced at \ufb01ne-tuning time; BERT learns\n[SEP], [CLS] and sentence A/B embed-\ndings during pre-training.\n\u2022 GPT was trained for 1M steps with a batch\nsize of 32,000 words; BERT was trained for\n1M steps with a batch size of 128,000 words.\n\u2022 GPT used the same learning rate of 5e-5 for\nall \ufb01ne-tuning experiments; BERT chooses a\ntask-speci\ufb01c \ufb01ne-tuning learning rate which\nperforms the best on the development set.\nTo isolate the effect of these differences, we per-\nform ablation experiments in Section 5.1 which\ndemonstrate that the majority of the"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We report GPT-3 values on the dev set, so our numbers are not directly comparable to the dotted reference\nlines (our test set results are in Table 3.8). The BERT-Large reference model was \ufb01ne-tuned on the SuperGLUE training\nset (125K examples), whereas BERT++ was \ufb01rst \ufb01ne-tuned on MultiNLI (392K examples) and SW AG (113K examples)\nbefore further \ufb01ne-tuning on the SuperGLUE training set (for a total of 630K \ufb01ne-tuning examples)."
+      }
+    ]
+  },
+  {
+    "question": "How does LoRA reduce the number of trainable parameters?",
+    "expected_source": "lora.pdf",
+    "context": [
+      {
+        "source": "lora.pdf",
+        "text": "We cite numbers from prior works whenever possible to maximize\nthe number of baselines we compare with; they are in rows with an asterisk (*) in the \ufb01rst column.\nIn all cases, we have|\u0398| = \u02c6LAdpt\u00d7(2\u00d7dmodel\u00d7r +r +dmodel)+2\u00d7 \u02c6LLN\u00d7dmodel where \u02c6LAdpt\nis the number of adapter layers and \u02c6LLN the number of trainable LayerNorms (e.g., in AdapterL).\nLoRA adds trainable pairs of rank decomposition matrices in parallel to existing weight matrices.\nAs mentioned in Section 4.2, we only apply LoRA toWq andWv in most experiments for simplicity.\nThe number of trainable parameters is determined by the rankr and the shape of the original weights:\n|\u0398| = 2\u00d7 \u02c6LLoRA\u00d7dmodel\u00d7r, where \u02c6LLoRA is the number of weight matrices we apply LoRA to.\n6 Model & Method # Trainable E2E NLG Challenge\nParameters BLEU NIST MET ROUGE-L CIDEr\nGPT-2 M"
+      },
+      {
+        "source": "lora.pdf",
+        "text": "1) LoRA can be combined with other ef\ufb01cient adapta-\ntion methods, potentially providing orthogonal improvement. 2) The mechanism behind \ufb01ne-tuning\nor LoRA is far from clear \u2013 how are features learned during pre-training transformed to do well\non downstream tasks? We believe that LoRA makes it more tractable to answer this than full \ufb01ne-\n12 tuning. 3) We mostly depend on heuristics to select the weight matrices to apply LoRA to."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices. In\nother words, as we increase the number of trainable parameters 3, training LoRA roughly converges\nto training the original model, while adapter-based methods converges to an MLP and pre\ufb01x-based\nmethods to a model that cannot take long input sequences.\nNo Additional Inference Latency. When deployed in production, we can explicitly compute and\nstore W = W0 +BA and perform inference as usual."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "(e.g., in AdapterL).\nLoRA adds trainable pairs of rank decomposition matrices in parallel to existing weight matrices.\nAs mentioned in Section 4.2, we only apply LoRA toWq andWv in most experiments for simplicity.\nThe number of trainable parameters is determined by the rankr and the shape of the original weights:\n|\u0398| = 2\u00d7 \u02c6LLoRA\u00d7dmodel\u00d7r, where \u02c6LLoRA is the number of weight matrices we apply LoRA to.\n6 Model & Method # Trainable E2E NLG Challenge\nParameters BLEU NIST MET ROUGE-L CIDEr\nGPT-2 M (FT)* 354.92M 68.2 8.62 46.2 71.0 2.47\nGPT-2 M (AdapterL)* 0.37M 66.3 8.41 45.0 69.8 2.40\nGPT-2 M (AdapterL)* 11.09M 68.9 8.71 46.1 71.3 2.47\nGPT-2 M (AdapterH) 11.09M 67.3\u00b1.6 8.50\u00b1.07 46.0\u00b1.2 70.7\u00b1.2 2.44\u00b1.01\nGPT-2 M (FTTop2)* 25.19M 68.1 8.59 46.0 70.8 2.41\nGPT-2 M (PreLayer)* 0.35M 69.7 8.81 46.1 71.4 2.49\nGPT-2 M (LoRA) 0.35M 70.4\u00b1.1 8.85\u00b1.02 46.8\u00b1.2 71.8\u00b1.1 2.53\u00b1.02\nGPT-2 L (FT)* 774.03M 68.5 8.78 46.0 69.9 2.45\nGPT-2 L (AdapterL) 0.88M 69.1\u00b1.1 8.68\u00b1.03 46.3\u00b1.0 71.4\u00b1.2 2.49\u00b1.0\nGPT-2 L"
+      },
+      {
+        "source": "lora.pdf",
+        "text": "On\nMultiNLI, the combination of LoRA+PE doesn\u2019t perform better than LoRA, possibly because LoRA\non its own already achieves performance comparable to the human baseline. Secondly, we notice\nthat LoRA+PL performs slightly worse than LoRA even with more trainable parameters. We at-\ntribute this to the fact that pre\ufb01x-layer tuning is very sensitive to the choice of learning rate and thus\nmakes the optimization of LoRA weights more dif\ufb01cult in LoRA+PL.\nF A DDITIONAL EMPIRICAL EXPERIMENTS\nF.1 A DDITIONAL EXPERIMENTS ON GPT-2\nWe also repeat our experiment on DART (Nan et al., 2020) and WebNLG (Gardent et al., 2017)\nfollowing the setup of Li & Liang (2021)."
+      }
+    ]
+  },
+  {
+    "question": "What is low-rank decomposition in LoRA?",
+    "expected_source": "lora.pdf",
+    "context": [
+      {
+        "source": "lora.pdf",
+        "text": "This suggests that even a rank of four\ncaptures enough information in \u2206W such that it is preferable to adapt more weight matrices than\nadapting a single type of weights with a larger rank.\n7.2 W HAT IS THE OPTIMAL RANK r FOR LORA?\nWe turn our attention to the effect of rank r on model performance. We adapt {Wq,Wv},\n{Wq,Wk,Wv,Wc}, and justWq for a comparison.\nWeight Type r = 1 r = 2 r = 4 r = 8 r = 64\nWikiSQL(\u00b10.5%) Wq 68.8 69.6 70.5 70.4 70.0\nWq,Wv 73.4 73.3 73.7 73.8 73.5\nWq,Wk,Wv,Wo 74.1 73.7 74.0 74.0 73.9\nMultiNLI (\u00b10.1%)\nWq 90.7 90.9 91.1 90.7 90.7\nWq,Wv 91.3 91.4 91.3 91.6 91.4\nWq,Wk,Wv,Wo 91.2 91.7 91.7 91.5 91.4\nTable 6: Validation accuracy on WikiSQL and MultiNLI with different rank r."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "LoRA allows us to train some dense layers in a neural\nnetwork indirectly by optimizing rank decomposition matrices of the dense layers\u2019 change during\nadaptation instead, while keeping the pre-trained weights frozen, as shown in Figure 1. Using GPT-3\n175B as an example, we show that a very low rank (i.e.,r in Figure 1 can be one or two) suf\ufb01ces even\nwhen the full rank (i.e., d) is as high as 12,288, making LoRA both storage- and compute-ef\ufb01cient.\nLoRA possesses several key advantages.\n\u2022 A pre-trained model can be shared and used to build many small LoRA modules for dif-\nferent tasks."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "We conduct a similar experiment on GPT-2 in Section H.2.\nTable 6 shows that, surprisingly, LoRA already performs competitively with a very small r (more\nso for{Wq,Wv} than just Wq). This suggests the update matrix \u2206W could have a very small\n\u201cintrinsic rank\u201d.6 To further support this \ufb01nding, we check the overlap of the subspaces learned by\ndifferent choices of r and by different random seeds. We argue that increasing r does not cover a\nmore meaningful subspace, which suggests that a low-rank adaptation matrix is suf\ufb01cient.\n6However, we do not expect a small r to work for every task or dataset."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "We cite numbers from prior works whenever possible to maximize\nthe number of baselines we compare with; they are in rows with an asterisk (*) in the \ufb01rst column.\nIn all cases, we have|\u0398| = \u02c6LAdpt\u00d7(2\u00d7dmodel\u00d7r +r +dmodel)+2\u00d7 \u02c6LLN\u00d7dmodel where \u02c6LAdpt\nis the number of adapter layers and \u02c6LLN the number of trainable LayerNorms (e.g., in AdapterL).\nLoRA adds trainable pairs of rank decomposition matrices in parallel to existing weight matrices.\nAs mentioned in Section 4.2, we only apply LoRA toWq andWv in most experiments for simplicity.\nThe number of trainable parameters is determined by the rankr and the shape of the original weights:\n|\u0398| = 2\u00d7 \u02c6LLoRA\u00d7dmodel\u00d7r, where \u02c6LLoRA is the number of weight matrices we apply LoRA to.\n6 Model & Method # Trainable E2E NLG Challenge\nParameters BLEU NIST MET ROUGE-L CIDEr\nGPT-2 M"
+      },
+      {
+        "source": "lora.pdf",
+        "text": "3) We mostly depend on heuristics to select the weight matrices to apply LoRA to. Are\nthere more principled ways to do it? 4) Finally, the rank-de\ufb01ciency of \u2206W suggests thatW could\nbe rank-de\ufb01cient as well, which can also be a source of inspiration for future works.\nREFERENCES\nArmen Aghajanyan, Luke Zettlemoyer, and Sonal Gupta. Intrinsic Dimensionality Explains the\nEffectiveness of Language Model Fine-Tuning. arXiv:2012.13255 [cs], December 2020. URL\nhttp://arxiv.org/abs/2012.13255.\nZeyuan Allen-Zhu and Yuanzhi Li."
+      }
+    ]
+  },
+  {
+    "question": "Which weight matrices does LoRA typically apply to?",
+    "expected_source": "lora.pdf",
+    "context": [
+      {
+        "source": "lora.pdf",
+        "text": "This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices. In\nother words, as we increase the number of trainable parameters 3, training LoRA roughly converges\nto training the original model, while adapter-based methods converges to an MLP and pre\ufb01x-based\nmethods to a model that cannot take long input sequences.\nNo Additional Inference Latency. When deployed in production, we can explicitly compute and\nstore W = W0 +BA and perform inference as usual."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "3) We mostly depend on heuristics to select the weight matrices to apply LoRA to. Are\nthere more principled ways to do it? 4) Finally, the rank-de\ufb01ciency of \u2206W suggests thatW could\nbe rank-de\ufb01cient as well, which can also be a source of inspiration for future works.\nREFERENCES\nArmen Aghajanyan, Luke Zettlemoyer, and Sonal Gupta. Intrinsic Dimensionality Explains the\nEffectiveness of Language Model Fine-Tuning. arXiv:2012.13255 [cs], December 2020. URL\nhttp://arxiv.org/abs/2012.13255.\nZeyuan Allen-Zhu and Yuanzhi Li."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "LoRA takes a step further and does not require the accumu-\nlated gradient update to weight matrices to have full-rank during adaptation. This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "This suggests that even a rank of four\ncaptures enough information in \u2206W such that it is preferable to adapt more weight matrices than\nadapting a single type of weights with a larger rank.\n7.2 W HAT IS THE OPTIMAL RANK r FOR LORA?\nWe turn our attention to the effect of rank r on model performance. We adapt {Wq,Wv},\n{Wq,Wk,Wv,Wc}, and justWq for a comparison.\nWeight Type r = 1 r = 2 r = 4 r = 8 r = 64\nWikiSQL(\u00b10.5%) Wq 68.8 69.6 70.5 70.4 70.0\nWq,Wv 73.4 73.3 73.7 73.8 73.5\nWq,Wk,Wv,Wo 74.1 73.7 74.0 74.0 73.9\nMultiNLI (\u00b10.1%)\nWq 90.7 90.9 91.1 90.7 90.7\nWq,Wv 91.3 91.4 91.3 91.6 91.4\nWq,Wk,Wv,Wo 91.2 91.7 91.7 91.5 91.4\nTable 6: Validation accuracy on WikiSQL and MultiNLI with different rank r."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "1) LoRA can be combined with other ef\ufb01cient adapta-\ntion methods, potentially providing orthogonal improvement. 2) The mechanism behind \ufb01ne-tuning\nor LoRA is far from clear \u2013 how are features learned during pre-training transformed to do well\non downstream tasks? We believe that LoRA makes it more tractable to answer this than full \ufb01ne-\n12 tuning. 3) We mostly depend on heuristics to select the weight matrices to apply LoRA to."
+      }
+    ]
+  },
+  {
+    "question": "What is the difference between RAG-Sequence and RAG-Token models?",
+    "expected_source": "rag_paper.pdf",
+    "context": [
+      {
+        "source": "rag_paper.pdf",
+        "text": "Concretely, the top K documents are retrieved using the\nretriever, and then the generator produces a distribution for the next output token for each document,\nbefore marginalizing, and repeating the process with the following output token, Formally, we de\ufb01ne:\npRAG-Token(y|x) \u2248\nN\u220f\ni\n\u2211\nz\u2208top-k(p(\u00b7|x))\np\u03b7(z|x)p\u03b8(yi|x,z,y 1:i\u22121)\nFinally, we note that RAG can be used for sequence classi\ufb01cation tasks by considering the target class\nas a target sequence of length one, in which case RAG-Sequence and RAG-Token are equivalent.\n2.2 Retriever: DPR\nThe retrieval componentp\u03b7(z|x) is based on DPR [26]. DPR follows a bi-encoder architecture:\np\u03b7(z|x)\u221d exp\n(\nd(z)\u22a4q(x)\n)\nd(z) = BERTd(z), q(x) = BERTq(x)\nwhere d(z) is a dense representation of a document produced by a BERTBASE document encoder [8],\nand q(x) a query representation produced by a query encoder, also based on BERTBASE."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "Updating the document encoder BERTd during training is costly as\nit requires the document index to be periodically updated as REALM does during pre-training [20].\nWe do not \ufb01nd this step necessary for strong performance, and keep the document encoder (and\nindex) \ufb01xed, only \ufb01ne-tuning the query encoder BERTq and the BART generator.\n2.5 Decoding\nAt test time, RAG-Sequence and RAG-Token require different ways to approximatearg maxyp(y|x).\nRAG-Token The RAG-Token model can be seen as a standard, autoregressive seq2seq genera-\ntor with transition probability: p\u2032\n\u03b8(yi|x,y 1:i\u22121) = \u2211\nz\u2208top-k(p(\u00b7|x))p\u03b7(zi|x)p\u03b8(yi|x,zi,y 1:i\u22121) To\ndecode, we can plugp\u2032\n\u03b8(yi|x,y 1:i\u22121) into a standard beam decoder.\nRAG-Sequence For RAG-Sequence, the likelihoodp(y|x) does not break into a conventional per-\ntoken likelihood, hence we cannot solve it with a single beam search."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "An interactive demo of RAG models can be found at https://huggingface.co/rag/\n2 by\u03b8 that generates a current token based on a context of the previousi\u2212 1 tokensy1:i\u22121, the original\ninputx and a retrieved passagez.\nTo train the retriever and generator end-to-end, we treat the retrieved document as a latent variable.\nWe propose two models that marginalize over the latent documents in different ways to produce a\ndistribution over generated text. In one approach, RAG-Sequence, the model uses the same document\nto predict each target token. The second approach, RAG-Token, can predict each target token based\non a different document. In the following, we formally introduce both models and then describe the\np\u03b7 andp\u03b8 components, as well as the training and decoding procedure.\n2.1 Models\nRAG-Sequence Model The RAG-Sequence model uses the same retrieved document to generate\nthe complete sequence."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "As FEVER is a classi\ufb01cation task, both RAG models are equivalent.\nModel NQ TQA WQ CT Jeopardy-QGen MSMarco FVR-3 FVR-2\nExact Match B-1 QB-1 R-L B-1 Label Accuracy\nRAG-Token-BM25 29.7 41.5 32.1 33.1 17.5 22.3 55.5 48.4 75.1 91.6RAG-Sequence-BM25 31.8 44.1 36.6 33.8 11.1 19.5 56.5 46.9\nRAG-Token-Frozen 37.8 50.1 37.1 51.1 16.7 21.7 55.9 49.4 72.9 89.4RAG-Sequence-Frozen 41.2 52.1 41.8 52.6 11.8 19.6 56.7 47.3\nRAG-Token 43.5 54.8 46.5 51.9 17.9 22.6 56.2 49.4 74.5 90.6RAG-Sequence 44.0 55.8 44.9 53.4 15.3 21.5 57.2 47.5\nbetween these dates and use a template \u201cWho is {position}?\u201d"
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "and RAG-Token require different ways to approximatearg maxyp(y|x).\nRAG-Token The RAG-Token model can be seen as a standard, autoregressive seq2seq genera-\ntor with transition probability: p\u2032\n\u03b8(yi|x,y 1:i\u22121) = \u2211\nz\u2208top-k(p(\u00b7|x))p\u03b7(zi|x)p\u03b8(yi|x,zi,y 1:i\u22121) To\ndecode, we can plugp\u2032\n\u03b8(yi|x,y 1:i\u22121) into a standard beam decoder.\nRAG-Sequence For RAG-Sequence, the likelihoodp(y|x) does not break into a conventional per-\ntoken likelihood, hence we cannot solve it with a single beam search. Instead, we run beam search for\neach documentz, scoring each hypothesis usingp\u03b8(yi|x,z,y 1:i\u22121). This yields a set of hypotheses\nY , some of which may not have appeared in the beams of all documents. To estimate the probability\nof an hypothesis y we run an additional forward pass for each document z for which y does not\nappear in the beam, multiply generator probability withp\u03b7(z|x) and then sum the probabilities across\nbeams for the marginals."
+      }
+    ]
+  },
+  {
+    "question": "How does retrieval-augmented generation combine parametric and non-parametric memory?",
+    "expected_source": "rag_paper.pdf",
+    "context": [
+      {
+        "source": "rag_paper.pdf",
+        "text": "Additionally, providing provenance for their\ndecisions and updating their world knowledge remain open research problems. Pre-\ntrained models with a differentiable access mechanism to explicit non-parametric\nmemory have so far been only investigated for extractive downstream tasks. We\nexplore a general-purpose \ufb01ne-tuning recipe for retrieval-augmented generation\n(RAG) \u2014 models which combine pre-trained parametric and non-parametric mem-\nory for language generation."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "We\nexplore a general-purpose \ufb01ne-tuning recipe for retrieval-augmented generation\n(RAG) \u2014 models which combine pre-trained parametric and non-parametric mem-\nory for language generation. We introduce RAG models where the parametric\nmemory is a pre-trained seq2seq model and the non-parametric memory is a dense\nvector index of Wikipedia, accessed with a pre-trained neural retriever. We com-\npare two RAG formulations, one which conditions on the same retrieved passages\nacross the whole generated sequence, and another which can use different passages\nper token."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "In contrast, we explore a setting where both\nparametric and non-parametric memory components are pre-trained and pre-loaded with extensive\nknowledge. Crucially, by using pre-trained access mechanisms, the ability to access knowledge is\npresent without additional training.\nOur results highlight the bene\ufb01ts of combining parametric and non-parametric memory with genera-\ntion for knowledge-intensive tasks\u2014tasks that humans could not reasonably be expected to perform\nwithout access to an external knowledge source."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "Here, we bring hybrid parametric\nand non-parametric memory to the \u201cworkhorse of NLP,\u201d i.e. sequence-to-sequence (seq2seq) models.\nWe endow pre-trained, parametric-memory generation models with a non-parametric memory through\na general-purpose \ufb01ne-tuning approach which we refer to as retrieval-augmented generation (RAG).\nWe build RAG models where the parametric memory is a pre-trained seq2seq transformer, and the\nnon-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural\nretriever."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "They can do so without any access to an external memory, as a parameterized\nimplicit knowledge base [51, 52]. While this development is exciting, such models do have down-\nsides: They cannot easily expand or revise their memory, can\u2019t straightforwardly provide insight into\ntheir predictions, and may produce \u201challucinations\u201d [38]. Hybrid models that combine parametric\nmemory with non-parametric (i.e., retrieval-based) memories [20, 26, 48] can address some of these\nissues because knowledge can be directly revised and expanded, and accessed knowledge can be\ninspected and interpreted."
+      }
+    ]
+  },
+  {
+    "question": "What retriever is used in the RAG paper?",
+    "expected_source": "rag_paper.pdf",
+    "context": [
+      {
+        "source": "rag_paper.pdf",
+        "text": "Concretely, the top K documents are retrieved using the\nretriever, and then the generator produces a distribution for the next output token for each document,\nbefore marginalizing, and repeating the process with the following output token, Formally, we de\ufb01ne:\npRAG-Token(y|x) \u2248\nN\u220f\ni\n\u2211\nz\u2208top-k(p(\u00b7|x))\np\u03b7(z|x)p\u03b8(yi|x,z,y 1:i\u22121)\nFinally, we note that RAG can be used for sequence classi\ufb01cation tasks by considering the target class\nas a target sequence of length one, in which case RAG-Sequence and RAG-Token are equivalent.\n2.2 Retriever: DPR\nThe retrieval componentp\u03b7(z|x) is based on DPR [26]. DPR follows a bi-encoder architecture:\np\u03b7(z|x)\u221d exp\n(\nd(z)\u22a4q(x)\n)\nd(z) = BERTd(z), q(x) = BERTq(x)\nwhere d(z) is a dense representation of a document produced by a BERTBASE document encoder [8],\nand q(x) a query representation produced by a query encoder, also based on BERTBASE."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "In these cases, once retrieval had collapsed, the generator would learn to ignore the documents,\nand the RAG model would perform equivalently to BART. The collapse could be due to a less-explicit\nrequirement for factual knowledge in some tasks, or the longer target sequences, which could result\nin less informative gradients for the retriever. Perez et al.[46] also found spurious retrieval results\nwhen optimizing a retrieval component in order to improve performance on downstream tasks.\nI Number of instances per dataset\nThe number of training, development and test datapoints in each of our datasets is shown in Table 7.\n19"
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "After submission, We have ported our code to HuggingFace\nTransformers [66]3, which achieves equivalent performance to the previous version but is a cleaner\nand easier to use implementation. This version is also open-sourced. We also compress the document\nindex using FAISS\u2019s compression tools, reducing the CPU memory requirement to 36GB. Scripts to\nrun experiments with RAG can be found athttps://github.com/huggingface/transformers/\nblob/master/examples/rag/README.md and an interactive demo of a RAG model can be found\nat https://huggingface.co/rag/\n2https://github.com/pytorch/fairseq\n3https://github.com/huggingface/transformers\n17"
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "Figure 3 (right) shows that retrieving more documents leads to higher Rouge-L for\nRAG-Token at the expense of Bleu-1, but the effect is less pronounced for RAG-Sequence.\n10 20 30 40 50\nKR e t r i e v e dD o c s\n39\n40\n41\n42\n43\n44NQ Exact Match RAG-Tok\nRAG-Seq\n10 20 30 40 50\nKR e t r i e v e dD o c s\n40\n50\n60\n70\n80NQ Answer Recall @ K\nRAG-Tok\nRAG-Seq\nFixed DPR\nBM25\n10 20 30 40 50\nKR e t r i e v e dD o c s\n48\n50\n52\n54\n56Bleu-1 / Rouge-L score\nRAG-Tok R-L\nRAG-Tok B-1\nRAG-Seq R-L\nRAG-Seq B-1\nFigure 3: Left: NQ performance as more documents are retrieved. Center: Retrieval recall perfor-\nmance in NQ."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "It is worth noting that RAG\u2019s\nretriever is initialized using DPR\u2019s retriever, which uses retrieval supervision on Natural Questions\nand TriviaQA. RAG compares favourably to the DPR QA system, which uses a BERT-based \u201ccross-\nencoder\u201d to re-rank documents, along with an extractive reader. RAG demonstrates that neither a\nre-ranker nor extractive reader is necessary for state-of-the-art performance.\nThere are several advantages to generating answers even when it is possible to extract them."
+      }
+    ]
+  },
+  {
+    "question": "What is few-shot learning in the context of GPT-3?",
+    "expected_source": "gpt3_few_shot.pdf",
+    "context": [
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "While GPT-3\ntakes a step towards test-time sample ef\ufb01ciency closer to that of humans (one-shot or zero-shot), it still sees much more\ntext during pre-training than a human sees in the their lifetime [Lin20]. Improving pre-training sample ef\ufb01ciency is\nan important direction for future work, and might come from grounding in the physical world to provide additional\ninformation, or from algorithmic improvements.\nA limitation, or at least uncertainty, associated with few-shot learning in GPT-3 is ambiguity about whether few-shot\nlearning actually learns new tasks \u201cfrom scratch\u201d at inference time, or if it simply recognizes and identi\ufb01es tasks that it\nhas learned during training."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Improving pre-training sample ef\ufb01ciency is\nan important direction for future work, and might come from grounding in the physical world to provide additional\ninformation, or from algorithmic improvements.\nA limitation, or at least uncertainty, associated with few-shot learning in GPT-3 is ambiguity about whether few-shot\nlearning actually learns new tasks \u201cfrom scratch\u201d at inference time, or if it simply recognizes and identi\ufb01es tasks that it\nhas learned during training. These possibilities exist on a spectrum, ranging from demonstrations in the training set that\nare drawn from exactly the same distribution as those at test time, to recognizing the same task but in a different format,\nto adapting to a speci\ufb01c style of a general task such as QA, to learning a skill entirely de novo. Where GPT-3 is on\nthis spectrum may also vary from task to task."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "In\nthis work we do not \ufb01ne-tune GPT-3 because our focus is on task-agnostic performance, but GPT-3 can be\n\ufb01ne-tuned in principle and this is a promising direction for future work.\n\u2022 Few-Shot (FS) is the term we will use in this work to refer to the setting where the model is given a few\ndemonstrations of the task at inference time as conditioning [RWC+19], but no weight updates are allowed.\nAs shown in Figure 2.1, for a typical dataset an example has a context and a desired completion (for example\nan English sentence and the French translation), and few-shot works by givingK examples of context and\ncompletion, and then one \ufb01nal example of context, with the model expected to provide the"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "The main advantage of \ufb01ne-tuning is strong performance\non many benchmarks. The main disadvantages are the need for a new large dataset for every task, the potential\nfor poor generalization out-of-distribution [ MPL19], and the potential to exploit spurious features of the\ntraining data [GSL+18, NK19], potentially resulting in an unfair comparison with human performance. In\nthis work we do not \ufb01ne-tune GPT-3 because our focus is on task-agnostic performance, but GPT-3 can be\n\ufb01ne-tuned in principle and this is a promising direction for future work.\n\u2022 Few-Shot (FS) is the"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We emphasize that these \u201clearning\u201d curves involve no\ngradient updates or \ufb01ne-tuning, just increasing numbers of demonstrations given as conditioning.\nBroadly, on NLP tasks GPT-3 achieves promising results in the zero-shot and one-shot settings, and in the the few-shot\nsetting is sometimes competitive with or even occasionally surpasses state-of-the-art (despite state-of-the-art being held\nby \ufb01ne-tuned models). For example, GPT-3 achieves 81.5 F1 on CoQA in the zero-shot setting, 84.0 F1 on CoQA in\nthe one-shot setting, 85.0 F1 in the few-shot setting. Similarly, GPT-3 achieves 64.3% accuracy on TriviaQA in the\nzero-shot setting, 68.0% in the one-shot setting, and 71.2% in the few-shot setting, the last of which is state-of-the-art\nrelative to \ufb01ne-tuned models operating in the same closed-book setting.\nGPT-3 also displays one-shot and few-shot pro\ufb01ciency at tasks designed to test rapid adaption or"
+      }
+    ]
+  },
+  {
+    "question": "How many parameters does GPT-3 have?",
+    "expected_source": "gpt3_few_shot.pdf",
+    "context": [
+      {
+        "source": "lora.pdf",
+        "text": "Training larger Transformers generally results in better performance and\nremains an active research direction. GPT-3 (Brown et al., 2020) is the largest single Transformer\nlanguage model trained to-date with 175B parameters.\nPrompt Engineering and Fine-Tuning. While GPT-3 175B can adapt its behavior with just a\nfew additional training examples, the result depends heavily on the input prompt (Brown et al.,\n2020)."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "Variants of it include learning just a subset of the parameters Devlin et al. (2019b);\nCollobert & Weston (2008), yet practitioners often retrain all of them to maximize the downstream\nperformance. However, the enormity of GPT-3 175B makes it challenging to perform \ufb01ne-tuning in\nthe usual way due to the large checkpoint it produces and the high hardware barrier to entry since it\nhas the same memory footprint as pre-training.\nParameter-Ef\ufb01cient Adaptation."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We report GPT-3 values on the dev set, so our numbers are not directly comparable to the dotted reference\nlines (our test set results are in Table 3.8). The BERT-Large reference model was \ufb01ne-tuned on the SuperGLUE training\nset (125K examples), whereas BERT++ was \ufb01rst \ufb01ne-tuned on MultiNLI (392K examples) and SW AG (113K examples)\nbefore further \ufb01ne-tuning on the SuperGLUE training set (for a total of 630K \ufb01ne-tuning examples)."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "GPT-3 few-shot is given a total of 32 examples within the context of each task and performs no gradient\nupdates.\n19 Figure 3.8: Performance on SuperGLUE increases with model size and number of examples in context.A value\nofK = 32 means that our model was shown 32 examples per task, for 256 examples total divided across the 8 tasks in\nSuperGLUE. We report GPT-3 values on the dev set, so our numbers are not directly comparable to the dotted reference\nlines (our test set results are in Table 3.8)."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "This is approaching the performance of a \ufb01ne-tuned RoBERTa baseline\n(55.9%) from Uni\ufb01edQA [KKS+20]. On the \u201cEasy\u201d version of the dataset (questions which either of the mentioned\nbaseline approaches answered correctly), GPT-3 achieves 68.8%, 71.2%, and 70.1% which slightly exceeds a \ufb01ne-tuned\nRoBERTa baseline from [KKS+20]."
+      }
+    ]
+  },
+  {
+    "question": "What is in-context learning?",
+    "expected_source": "gpt3_few_shot.pdf",
+    "context": [
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Since in-context learning involves absorbing many skills and\ntasks within the parameters of the model, it is plausible that in-context learning abilities might show similarly strong\ngains with scale.\n1In the context of language models this has sometimes been called \u201czero-shot transfer\u201d, but this term is potentially ambiguous:\nthe method is \u201czero-shot\u201d in the sense that no gradient updates are performed, but it often involves providing inference-time\ndemonstrations to the model, so is not truly learning from zero examples. To avoid this confusion, we use the term \u201cmeta-learning\u201d\nto capture the inner-loop / outer-loop structure of the general method, and the term \u201cin context-learning\u201d to refer to the inner\nloop of meta-learning."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Our use\nof in-context learning is also similar to [RWC+19], but in this work we systematically explore different settings for\nlearning within the context. Therefore, we start this section by explicitly de\ufb01ning and contrasting the different settings\nthat we will be evaluating GPT-3 on or could in principle evaluate GPT-3 on. These settings can be seen as lying on a\nspectrum of how much task-speci\ufb01c data they tend to rely on."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We use the term \u201cin-context learning\u201d to describe the inner loop of this process, which occurs within\nthe forward-pass upon each sequence. The sequences in this diagram are not intended to be representative of the data a\nmodel would see during pre-training, but are intended to show that there are sometimes repeated sub-tasks embedded\nwithin a single sequence.\n3 Figure 1.2: Larger models make increasingly ef\ufb01cient use of in-context information. We show in-context learning\nperformance on a simple task requiring the model to remove random symbols from a word, both with and without a\nnatural language task description (see Sec. 3.9.2)."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We show in-context learning\nperformance on a simple task requiring the model to remove random symbols from a word, both with and without a\nnatural language task description (see Sec. 3.9.2). The steeper \u201cin-context learning curves\u201d for large models demonstrate\nimproved ability to learn a task from contextual information. We see qualitatively similar behavior across a wide range\nof tasks.\nsuf\ufb01cient to enable a human to perform a new task to at least a reasonable degree of competence."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "\u201cin-context learning\u201d, using the text input of a pretrained language model as a form\nof task speci\ufb01cation: the model is conditioned on a natural language instruction and/or a few demonstrations of the task\nand is then expected to complete further instances of the task simply by predicting what comes next.\nWhile it has shown some initial promise, this approach still achieves results far inferior to \ufb01ne-tuning \u2013 for example\n[RWC+19] achieves only 4% on Natural Questions, and even its 55 F1 CoQa result is now more than 35 points behind\nthe state of the art. Meta-learning clearly requires substantial improvement in order to be viable as a practical method of\nsolving language tasks.\nAnother recent trend in language modeling may offer a way forward."
+      }
+    ]
+  },
+  {
+    "question": "Why did the Transformer get rid of recurrence?",
+    "expected_source": "attention_is_all_you_need.pdf",
+    "context": [
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "This makes\nit more difficult to learn dependencies between distant positions [ 12]. In the Transformer this is\nreduced to a constant number of operations, albeit at the cost of reduced effective resolution due\nto averaging attention-weighted positions, an effect we counteract with Multi-Head Attention as\ndescribed in section 3.2.\nSelf-attention, sometimes called intra-attention is an attention mechanism relating different positions\nof a single sequence in order to compute a representation of the sequence. Self-attention has been\nused successfully in a variety of tasks including"
+      },
+      {
+        "source": "lora.pdf",
+        "text": "Training larger Transformers generally results in better performance and\nremains an active research direction. GPT-3 (Brown et al., 2020) is the largest single Transformer\nlanguage model trained to-date with 175B parameters.\nPrompt Engineering and Fine-Tuning. While GPT-3 175B can adapt its behavior with just a\nfew additional training examples, the result depends heavily on the input prompt (Brown et al.,\n2020)."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "In the following sections, we will describe the Transformer, motivate\nself-attention and discuss its advantages over models such as [17, 18] and [9].\n3 Model Architecture\nMost competitive neural sequence transduction models have an encoder-decoder structure [5, 2, 35].\nHere, the encoder maps an input sequence of symbol representations (x1, ..., xn) to a sequence\nof continuous representations z = (z1, ..., zn). Given z, the decoder then generates an output\nsequence (y1, ..., ym) of symbols one element at a time. At each step the model is auto-regressive\n[10], consuming the previously generated symbols as additional input when generating the next.\n2"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "arXiv preprint arXiv:2005.11401,\n2020.\n[LSP+18] Peter J. Liu, Mohammad Saleh, Etienne Pot, Ben Goodrich, Ryan Sepassi, Lukasz Kaiser, and Noam\nShazeer. Generating Wikipedia by summarizing long sequences. arXiv preprint arXiv:1801.10198, 2018.\n[LWS+20] Zhuohan Li, Eric Wallace, Sheng Shen, Kevin Lin, Kurt Keutzer, Dan Klein, and Joseph E. Gonzalez.\nTrain large, then compress: Rethinking model size for ef\ufb01cient training and inference of transformers,\n2020.\n[LXL+17] Guokun Lai, Qizhe Xie, Hanxiao Liu, Yiming Yang, and Eduard Hovy."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "There is mini-\nmal difference between the pre-trained architec-\nture and the \ufb01nal downstream architecture.\nModel Architecture BERT\u2019s model architec-\nture is a multi-layer bidirectional Transformer en-\ncoder based on the original implementation de-\nscribed in Vaswani et al. (2017) and released in\nthe tensor2tensor library.1 Because the use\nof Transformers has become common and our im-\nplementation is almost identical to the original,\nwe will omit an exhaustive background descrip-\ntion of the model architecture and refer readers to\nVaswani et al. (2017) as well as excellent guides\nsuch as \u201cThe Annotated Transformer.\u201d2\nIn this work, we denote the number of layers\n(i.e., Transformer blocks) asL, the hidden size as\nH, and the number of self-attention heads as A.3\nWe"
+      }
+    ]
+  },
+  {
+    "question": "How does the model know word order without RNNs?",
+    "expected_source": "attention_is_all_you_need.pdf",
+    "context": [
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Example: opoepnnt\n\u2192 opponent.\n\u2022 Random insertion in word (RI) \u2013 A random punctuation or space character is inserted between each letter\nof a word, and the model must output the original word. Example: s.u!c/c!e.s s i/o/n = succession.\n\u2022 Reversed words (RW) \u2013 The model is given a word spelled backwards, and must output the original word.\nExample: stcejbo\u2192 objects.\nFor each task we generate 10,000 examples, which we chose to be the top 10,000 most frequent words as measured by\n[Nor09] of length more than 4 characters and less than 15 characters."
+      },
+      {
+        "source": "attention_is_all_you_need.pdf",
+        "text": "We show that the Transformer generalizes well to\nother tasks by applying it successfully to English constituency parsing both with\nlarge and limited training data.\n\u2217Equal contribution. Listing order is random. Jakob proposed replacing RNNs with self-attention and started\nthe effort to evaluate this idea. Ashish, with Illia, designed and implemented the first Transformer models and\nhas been crucially involved in every aspect of this work. Noam proposed scaled dot-product attention, multi-head\nattention and the parameter-free position representation and became the other person involved in nearly every\ndetail."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "This step\nis presented in the left part of Figure 1.\nTask #1: Masked LM Intuitively, it is reason-\nable to believe that a deep bidirectional model is\nstrictly more powerful than either a left-to-right\nmodel or the shallow concatenation of a left-to-\nright and a right-to-left model. Unfortunately,\nstandard conditional language models can only be\ntrained left-to-right or right-to-left, since bidirec-\ntional conditioning would allow each word to in-\ndirectly \u201csee itself\u201d, and the model could trivially\npredict the target word in a multi-layered context.\nformer is often referred to as a \u201cTransformer encoder\u201d while\nthe left-context-only version is referred to as a \u201cTransformer\ndecoder\u201d since it can be used for text generation.\nIn order to train a deep bidirectional"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "For example, it might be given \u201clyinevitab\u201d and should output\n\u201cinevitably\u201d.\n\u2022 Anagrams of all but \ufb01rst and last characters (A1) \u2013 The model is given a word where every letter except\nthe \ufb01rst and last have been scrambled randomly, and must output the original word. Example: criroptuon =\ncorruption.\n\u2022 Anagrams of all but \ufb01rst and last 2 characters (A2) \u2013 The model is given a word where every letter except\nthe \ufb01rst 2 and last 2 have been scrambled randomly, and must recover the original word. Example: opoepnnt\n\u2192 opponent.\n\u2022 Random insertion in word (RI) \u2013 A random punctuation or space character is inserted between each letter\nof a word, and the model must output the original word."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "Unfortunately,\nstandard conditional language models can only be\ntrained left-to-right or right-to-left, since bidirec-\ntional conditioning would allow each word to in-\ndirectly \u201csee itself\u201d, and the model could trivially\npredict the target word in a multi-layered context.\nformer is often referred to as a \u201cTransformer encoder\u201d while\nthe left-context-only version is referred to as a \u201cTransformer\ndecoder\u201d since it can be used for text generation.\nIn order to train a deep bidirectional representa-\ntion, we simply mask some percentage of the input\ntokens at random, and then predict those masked\ntokens. We refer to this procedure as a \u201cmasked\nLM\u201d (MLM), although it is often referred to as a\nCloze task in the literature (Taylor, 1953). In this\ncase, the \ufb01nal hidden vectors corresponding to the\nmask tokens are fed into an output softmax over\nthe vocabulary, as in a standard LM. In all of our\nexperiments, we mask 15% of all WordPiece to-\nkens in each sequence at random."
+      }
+    ]
+  },
+  {
+    "question": "Why can BERT use context from both directions instead of just left to right?",
+    "expected_source": "bert.pdf",
+    "context": [
+      {
+        "source": "bert.pdf",
+        "text": "A visualiza-\ntion of this construction can be seen in Figure 2.\n3.1 Pre-training BERT\nUnlike Peters et al. (2018a) and Radford et al.\n(2018), we do not use traditional left-to-right or\nright-to-left language models to pre-train BERT.\nInstead, we pre-train BERT using two unsuper-\nvised tasks, described in this section. This step\nis presented in the left part of Figure 1.\nTask #1: Masked LM Intuitively, it is reason-\nable to believe that a deep bidirectional model is\nstrictly more powerful than either a left-to-right\nmodel or the shallow concatenation of a left-to-\nright and a right-to-left model."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "In fact, many of the design decisions in BERT\nwere intentionally made to make it as close to\nGPT as possible so that the two methods could be\nminimally compared. The core argument of this\nwork is that the bi-directionality and the two pre-\ntraining tasks presented in Section 3.1 account for\nthe majority of the empirical improvements, but\nwe do note that there are several other differences\nbetween how BERT and GPT were trained:\n\u2022 GPT is trained on the BooksCorpus (800M\nwords); BERT is trained on the BooksCor-\npus (800M words) and Wikipedia (2,500M\nwords).\n\u2022 GPT uses a sentence separator ( [SEP]) and\nclassi\ufb01er token ( [CLS]) which are only in-\ntroduced at \ufb01ne-tuning time; BERT learns\n[SEP], [CLS]"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "BERT: Pre-training of Deep Bidirectional Transformers for\nLanguage Understanding\nJacob Devlin Ming-Wei Chang Kenton Lee Kristina Toutanova\nGoogle AI Language\n{jacobdevlin,mingweichang,kentonl,kristout}@google.com\nAbstract\nWe introduce a new language representa-\ntion model called BERT, which stands for\nBidirectional Encoder Representations from\nTransformers. Unlike recent language repre-\nsentation models (Peters et al., 2018a; Rad-\nford et al., 2018), BERT is designed to pre-\ntrain deep bidirectional representations from\nunlabeled text by jointly conditioning on both\nleft and right context in all layers."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "BiLSTM on top of the \u201cLTR + No\nNSP\u201d model during \ufb01ne-tuning.\nablation studies can be found in Appendix C.\n5.1 Effect of Pre-training Tasks\nWe demonstrate the importance of the deep bidi-\nrectionality of BERT by evaluating two pre-\ntraining objectives using exactly the same pre-\ntraining data, \ufb01ne-tuning scheme, and hyperpa-\nrameters as BERTBASE :\nNo NSP : A bidirectional model which is trained\nusing the \u201cmasked LM\u201d (MLM) but without the\n\u201cnext sentence prediction\u201d (NSP) task.\nLTR & No NSP: A left-context-only model which\nis trained using a standard Left-to-Right (LTR)\nLM, rather than an MLM. The left-only constraint\nwas also applied at \ufb01ne-tuning, because removing\nit introduced a pre-train/\ufb01ne-tune mismatch that\ndegraded downstream performance."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "BERT uses a bidirectional Transformer. OpenAI GPT\nuses a left-to-right Transformer. ELMo uses the concatenation of independently trained left-to-right and right-to-\nleft LSTMs to generate features for downstream tasks. Among the three, only BERT representations are jointly\nconditioned on both left and right context in all layers. In addition to the architecture differences, BERT and\nOpenAI GPT are \ufb01ne-tuning approaches, while ELMo is a feature-based approach.\nto converge. In Section C.1 we demonstrate that\nMLM does converge marginally slower than a left-\nto-right model (which"
+      }
+    ]
+  },
+  {
+    "question": "What's the next sentence prediction task about?",
+    "expected_source": "bert.pdf",
+    "context": [
+      {
+        "source": "bert.pdf",
+        "text": "We compare variations of this\nprocedure in Appendix C.2.\nTask #2: Next Sentence Prediction (NSP)\nMany important downstream tasks such as Ques-\ntion Answering (QA) and Natural Language Infer-\nence (NLI) are based on understanding the rela-\ntionship between two sentences, which is not di-\nrectly captured by language modeling. In order\nto train a model that understands sentence rela-\ntionships, we pre-train for a binarized next sen-\ntence prediction task that can be trivially gener-\nated from any monolingual corpus. Speci\ufb01cally,\nwhen choosing the sentences A and B for each pre-\ntraining example, 50% of the time B is the actual\nnext sentence that follows A (labeled as IsNext),\nand 50% of the time it is a random sentence from\nthe corpus (labeled as NotNext)."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "Then,\nTi will be used to predict the original token with\ncross entropy loss. We compare variations of this\nprocedure in Appendix C.2.\nTask #2: Next Sentence Prediction (NSP)\nMany important downstream tasks such as Ques-\ntion Answering (QA) and Natural Language Infer-\nence (NLI) are based on understanding the rela-\ntionship between two sentences, which is not di-\nrectly captured by language modeling."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "predicts every token), but\nthe empirical improvements of the MLM model\nfar outweigh the increased training cost.\nNext Sentence Prediction The next sentence\nprediction task can be illustrated in the following\nexamples.\nInput = [CLS] the man went to [MASK] store [SEP]\nhe bought a gallon [MASK] milk [SEP]\nLabel = IsNext\nInput = [CLS] the man [MASK] to the store [SEP]\npenguin [MASK] are flight ##less birds [SEP]\nLabel = NotNext\nA.2 Pre-training Procedure\nTo generate each training input sequence, we sam-\nple two spans of text from the corpus, which we\nrefer to as \u201csentences\u201d even though they are typ-\nically much longer than single sentences (but can\nbe shorter also). The \ufb01rst sentence receives the A\nembedding and the second receives the B embed-\nding. 50% of the time B is the actual next sentence\nthat follows A and 50% of the time it is a random\nsentence, which is done for the \u201cnext sentence pre-\ndiction\u201d task. They are sampled such that the com-\nbined length is\u2264 512 tokens."
+      },
+      {
+        "source": "bert.pdf",
+        "text": "EM\u2019\nC\n T1\n T[SEP]...\n TN\n T1\u2019 ...\n TM\u2019\nStart/End Span\nClass \nLabel\nBERT\nTok 1  Tok 2  Tok N...[CLS] Tok 1[CLS][CLS] Tok \n1\n [SEP]... Tok \nN\nTok \n1 ... Tok\nM\nSentence 1\n...\nSentence 2\nFigure 4: Illustrations of Fine-tuning BERT on Different Tasks.\nSST-2 The Stanford Sentiment Treebank is a\nbinary single-sentence classi\ufb01cation task consist-\ning of sentences extracted from movie reviews\nwith human annotations of their sentiment (Socher\net al., 2013).\nCoLA The Corpus of Linguistic Acceptability is\na binary single-sentence classi\ufb01cation task, where\nthe goal is to predict whether an English sentence\nis linguistically \u201cacceptable\u201d or not (Warstadt\net al., 2018).\nSTS-B The"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "However, we will\nsee in the following sections that improvements in cross-entropy loss lead to consistent performance gains across a\nbroad spectrum of natural language tasks.\nBelow, we evaluate the 8 models described in Section 2 (the 175 billion parameter parameter GPT-3 and 7 smaller\nmodels) on a wide range of datasets. We group the datasets into 9 categories representing roughly similar tasks.\nIn Section 3.1 we evaluate on traditional language modeling tasks and tasks that are similar to language modeling,\nsuch as Cloze tasks and sentence/paragraph completion tasks. In Section 3.2 we evaluate on \u201cclosed book\u201d question\nanswering tasks: tasks which require using the information stored in the model\u2019s parameters to answer general\nknowledge questions."
+      }
+    ]
+  },
+  {
+    "question": "Why is LoRA cheaper to train than fully fine-tuning a model?",
+    "expected_source": "lora.pdf",
+    "context": [
+      {
+        "source": "lora.pdf",
+        "text": "1) LoRA can be combined with other ef\ufb01cient adapta-\ntion methods, potentially providing orthogonal improvement. 2) The mechanism behind \ufb01ne-tuning\nor LoRA is far from clear \u2013 how are features learned during pre-training transformed to do well\non downstream tasks? We believe that LoRA makes it more tractable to answer this than full \ufb01ne-\n12 tuning. 3) We mostly depend on heuristics to select the weight matrices to apply LoRA to."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices. In\nother words, as we increase the number of trainable parameters 3, training LoRA roughly converges\nto training the original model, while adapter-based methods converges to an MLP and pre\ufb01x-based\nmethods to a model that cannot take long input sequences.\nNo Additional Inference Latency. When deployed in production, we can explicitly compute and\nstore W = W0 +BA and perform inference as usual."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "On\nMultiNLI, the combination of LoRA+PE doesn\u2019t perform better than LoRA, possibly because LoRA\non its own already achieves performance comparable to the human baseline. Secondly, we notice\nthat LoRA+PL performs slightly worse than LoRA even with more trainable parameters. We at-\ntribute this to the fact that pre\ufb01x-layer tuning is very sensitive to the choice of learning rate and thus\nmakes the optimization of LoRA weights more dif\ufb01cult in LoRA+PL.\nF A DDITIONAL EMPIRICAL EXPERIMENTS\nF.1 A DDITIONAL EXPERIMENTS ON GPT-2\nWe also repeat our experiment on DART (Nan et al., 2020) and WebNLG (Gardent et al., 2017)\nfollowing the setup of Li & Liang (2021)."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "We also observe a 25% speedup\nduring training on GPT-3 175B compared to full \ufb01ne-tuning 5 as we do not need to calculate the\ngradient for the vast majority of the parameters.\nLoRA also has its limitations. For example, it is not straightforward to batch inputs to different tasks\nwith differentA andB in a single forward pass, if one chooses to absorbA andB intoW to eliminate\nadditional inference latency."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "LoRA takes a step further and does not require the accumu-\nlated gradient update to weight matrices to have full-rank during adaptation. This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices."
+      }
+    ]
+  },
+  {
+    "question": "What happens to the original model weights when you use LoRA?",
+    "expected_source": "lora.pdf",
+    "context": [
+      {
+        "source": "lora.pdf",
+        "text": "This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices. In\nother words, as we increase the number of trainable parameters 3, training LoRA roughly converges\nto training the original model, while adapter-based methods converges to an MLP and pre\ufb01x-based\nmethods to a model that cannot take long input sequences.\nNo Additional Inference Latency. When deployed in production, we can explicitly compute and\nstore W = W0 +BA and perform inference as usual."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "LoRA takes a step further and does not require the accumu-\nlated gradient update to weight matrices to have full-rank during adaptation. This means that when\napplying LoRA to all weight matrices and training all biases 2, we roughly recover the expressive-\nness of full \ufb01ne-tuning by setting the LoRA rankr to the rank of the pre-trained weight matrices."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "We cite numbers from prior works whenever possible to maximize\nthe number of baselines we compare with; they are in rows with an asterisk (*) in the \ufb01rst column.\nIn all cases, we have|\u0398| = \u02c6LAdpt\u00d7(2\u00d7dmodel\u00d7r +r +dmodel)+2\u00d7 \u02c6LLN\u00d7dmodel where \u02c6LAdpt\nis the number of adapter layers and \u02c6LLN the number of trainable LayerNorms (e.g., in AdapterL).\nLoRA adds trainable pairs of rank decomposition matrices in parallel to existing weight matrices.\nAs mentioned in Section 4.2, we only apply LoRA toWq andWv in most experiments for simplicity.\nThe number of trainable parameters is determined by the rankr and the shape of the original weights:\n|\u0398| = 2\u00d7 \u02c6LLoRA\u00d7dmodel\u00d7r, where \u02c6LLoRA is the number of weight matrices we apply LoRA to.\n6 Model & Method # Trainable E2E NLG Challenge\nParameters BLEU NIST MET ROUGE-L CIDEr\nGPT-2 M"
+      },
+      {
+        "source": "lora.pdf",
+        "text": "1) LoRA can be combined with other ef\ufb01cient adapta-\ntion methods, potentially providing orthogonal improvement. 2) The mechanism behind \ufb01ne-tuning\nor LoRA is far from clear \u2013 how are features learned during pre-training transformed to do well\non downstream tasks? We believe that LoRA makes it more tractable to answer this than full \ufb01ne-\n12 tuning. 3) We mostly depend on heuristics to select the weight matrices to apply LoRA to."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "On\nMultiNLI, the combination of LoRA+PE doesn\u2019t perform better than LoRA, possibly because LoRA\non its own already achieves performance comparable to the human baseline. Secondly, we notice\nthat LoRA+PL performs slightly worse than LoRA even with more trainable parameters. We at-\ntribute this to the fact that pre\ufb01x-layer tuning is very sensitive to the choice of learning rate and thus\nmakes the optimization of LoRA weights more dif\ufb01cult in LoRA+PL.\nF A DDITIONAL EMPIRICAL EXPERIMENTS\nF.1 A DDITIONAL EXPERIMENTS ON GPT-2\nWe also repeat our experiment on DART (Nan et al., 2020) and WebNLG (Gardent et al., 2017)\nfollowing the setup of Li & Liang (2021)."
+      }
+    ]
+  },
+  {
+    "question": "Why combine a language model with a retriever instead of just using the language model alone?",
+    "expected_source": "rag_paper.pdf",
+    "context": [
+      {
+        "source": "rag_paper.pdf",
+        "text": "Hybrid models that combine parametric\nmemory with non-parametric (i.e., retrieval-based) memories [20, 26, 48] can address some of these\nissues because knowledge can be directly revised and expanded, and accessed knowledge can be\ninspected and interpreted. REALM [ 20] and ORQA [ 31], two recently introduced models that\ncombine masked language models [8] with a differentiable retriever, have shown promising results,\narXiv:2005.11401v4  [cs.CL]  12 Apr 2021 The\tDivine\nComedy\t(x) q\nQuery\nEncoder\nq(x)\nMIPS p\u03b8\nGenerator\u00a0p\u03b8\n(Parametric)\nMargin-\nalize\nThis\t14th\tcentury\twork\nis\tdivided\tinto\t3\nsections:\t\"Inferno\",\n\"Purgatorio\"\t&\n\"Paradiso\"\t\t\t\t\t\t\t\t\t(y)\nEnd-to-End Backprop through q and\u00a0p\u03b8\nBarack\tObama\twas\nborn\tin\tHawaii.(x)\nFact Veri\ufb01cation: Fact"
+      },
+      {
+        "source": "bert.pdf",
+        "text": "The purpose of this is to bias the\nrepresentation towards the actual observed\nword.\nThe advantage of this procedure is that the\nTransformer encoder does not know which words\nit will be asked to predict or which have been re-\nplaced by random words, so it is forced to keep\na distributional contextual representation of ev-\nery input token. Additionally, because random\nreplacement only occurs for 1.5% of all tokens\n(i.e., 10% of 15%), this does not seem to harm\nthe model\u2019s language understanding capability. In\nSection C.2, we evaluate the impact this proce-\ndure.\nCompared to standard langauge model training,\nthe masked LM only make predictions on 15% of\ntokens in each batch, which suggests that more\npre-training steps may be required for the model"
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "REALM:\nRetrieval-augmented language model pre-training. ArXiv, abs/2002.08909, 2020. URL https:\n//arxiv.org/abs/2002.08909.\n[21] Tatsunori B Hashimoto, Kelvin Guu, Yonatan Oren, and Percy S Liang. A\nretrieve-and-edit framework for predicting structured outputs. In S. Bengio,\nH. Wallach, H. Larochelle, K. Grauman, N. Cesa-Bianchi, and R. Garnett, ed-\nitors, Advances in Neural Information Processing Systems 31 , pages 10052\u2013\n10062. Curran Associates, Inc., 2018."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We also brie\ufb02y\ndiscuss issues of energy ef\ufb01ciency (Section 6.3).\n34 6.1 Misuse of Language Models\nMalicious uses of language models can be somewhat dif\ufb01cult to anticipate because they often involve repurposing\nlanguage models in a very different environment or for a different purpose than researchers intended."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "As shown in Figure 1, our models\nleverage two components: (i) a retriever p\u03b7(z|x) with parameters\u03b7 that returns (top-K truncated)\ndistributions over text passages given a queryx and (ii) a generatorp\u03b8(yi|x,z,y 1:i\u22121) parametrized\n1Code to run experiments with RAG has been open-sourced as part of the HuggingFace Transform-\ners Library [66] and can be found at https://github.com/huggingface/transformers/blob/master/\nexamples/rag/. An interactive demo of RAG models can be found at https://huggingface.co/rag/\n2 by\u03b8 that generates a current token based on a context of the previousi\u2212 1 tokensy1:i\u22121, the original\ninputx and a retrieved passagez.\nTo train the retriever and generator end-to-end, we treat the retrieved document as a latent variable.\nWe propose two models that marginalize over the latent documents in different ways to produce a\ndistribution over generated text."
+      }
+    ]
+  },
+  {
+    "question": "Can RAG update its knowledge without retraining the whole model?",
+    "expected_source": "rag_paper.pdf",
+    "context": [
+      {
+        "source": "rag_paper.pdf",
+        "text": "We\nfound that people prefer RAG\u2019s generation over purely parametric BART, \ufb01nding RAG more factual\nand speci\ufb01c. We conducted an thorough investigation of the learned retrieval component, validating\nits effectiveness, and we illustrated how the retrieval index can be hot-swapped to update the model\nwithout requiring any retraining. In future work, it may be fruitful to investigate if the two components\ncan be jointly pre-trained from scratch, either with a denoising objective similar to BART or some\nanother objective."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "RAG could be\nemployed in a wide variety of scenarios with direct bene\ufb01t to society, for example by endowing it\nwith a medical index and asking it open-domain questions on that topic, or by helping people be more\neffective at their jobs.\nWith these advantages also come potential downsides: Wikipedia, or any potential external knowledge\nsource, will probably never be entirely factual and completely devoid of bias. Since RAG can be\nemployed as a language model, similar concerns as for GPT-2 [50] are valid here, although arguably\nto a lesser extent, including that it might be used to generate abuse, faked or misleading content in\nthe news or on social media; to impersonate others; or to automate the production of spam/phishing\ncontent [54]. Advanced language models may also lead to the automation of various jobs in the\ncoming decades [16]."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "In these cases, once retrieval had collapsed, the generator would learn to ignore the documents,\nand the RAG model would perform equivalently to BART. The collapse could be due to a less-explicit\nrequirement for factual knowledge in some tasks, or the longer target sequences, which could result\nin less informative gradients for the retriever. Perez et al.[46] also found spurious retrieval results\nwhen optimizing a retrieval component in order to improve performance on downstream tasks.\nI Number of instances per dataset\nThe number of training, development and test datapoints in each of our datasets is shown in Table 7.\n19"
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "Crucially, by using pre-trained access mechanisms, the ability to access knowledge is\npresent without additional training.\nOur results highlight the bene\ufb01ts of combining parametric and non-parametric memory with genera-\ntion for knowledge-intensive tasks\u2014tasks that humans could not reasonably be expected to perform\nwithout access to an external knowledge source. Our RAG models achieve state-of-the-art results\non open Natural Questions [29], WebQuestions [3] and CuratedTrec [2] and strongly outperform\nrecent approaches that use specialised pre-training objectives on TriviaQA [24]."
+      },
+      {
+        "source": "rag_paper.pdf",
+        "text": "Furthermore, RAG can generate correct answers\neven when the correct answer is not in any retrieved document, achieving 11.8% accuracy in such\ncases for NQ, where an extractive model would score 0%.\n4.2 Abstractive Question Answering\nAs shown in Table 2, RAG-Sequence outperforms BART on Open MS-MARCO NLG by 2.6 Bleu\npoints and 2.6 Rouge-L points. RAG approaches state-of-the-art model performance, which is\nimpressive given that (i) those models access gold passages with speci\ufb01c information required to\ngenerate the reference answer , (ii) many questions are unanswerable without the gold passages, and\n(iii) not all questions are answerable from Wikipedia alone. Table 3 shows some generated answers\nfrom our models. Qualitatively, we \ufb01nd that RAG models hallucinate less and generate factually\ncorrect text more often than BART."
+      }
+    ]
+  },
+  {
+    "question": "Does GPT-3 need to be retrained to learn a new task?",
+    "expected_source": "gpt3_few_shot.pdf",
+    "context": [
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Improving pre-training sample ef\ufb01ciency is\nan important direction for future work, and might come from grounding in the physical world to provide additional\ninformation, or from algorithmic improvements.\nA limitation, or at least uncertainty, associated with few-shot learning in GPT-3 is ambiguity about whether few-shot\nlearning actually learns new tasks \u201cfrom scratch\u201d at inference time, or if it simply recognizes and identi\ufb01es tasks that it\nhas learned during training. These possibilities exist on a spectrum, ranging from demonstrations in the training set that\nare drawn from exactly the same distribution as those at test time, to recognizing the same task but in a different format,\nto adapting to a speci\ufb01c style of a general task such as QA, to learning a skill entirely de novo. Where GPT-3 is on\nthis spectrum may also vary from task to task."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Our use\nof in-context learning is also similar to [RWC+19], but in this work we systematically explore different settings for\nlearning within the context. Therefore, we start this section by explicitly de\ufb01ning and contrasting the different settings\nthat we will be evaluating GPT-3 on or could in principle evaluate GPT-3 on. These settings can be seen as lying on a\nspectrum of how much task-speci\ufb01c data they tend to rely on."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "While GPT-3\ntakes a step towards test-time sample ef\ufb01ciency closer to that of humans (one-shot or zero-shot), it still sees much more\ntext during pre-training than a human sees in the their lifetime [Lin20]. Improving pre-training sample ef\ufb01ciency is\nan important direction for future work, and might come from grounding in the physical world to provide additional\ninformation, or from algorithmic improvements.\nA limitation, or at least uncertainty, associated with few-shot learning in GPT-3 is ambiguity about whether few-shot\nlearning actually learns new tasks \u201cfrom scratch\u201d at inference time, or if it simply recognizes and identi\ufb01es tasks that it\nhas learned during training."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "Section 5 discusses limitations of GPT-3.\nSection 6 discusses broader impacts. Section 7 reviews related work and Section 8 concludes.\n2 Approach\nOur basic pre-training approach, including model, data, and training, is similar to the process described in [RWC+19],\nwith relatively straightforward scaling up of the model size, dataset size and diversity, and length of training. Our use\nof in-context learning is also similar to [RWC+19], but in this work we systematically explore different settings for\nlearning within the context."
+      },
+      {
+        "source": "lora.pdf",
+        "text": "While GPT-3 175B can adapt its behavior with just a\nfew additional training examples, the result depends heavily on the input prompt (Brown et al.,\n2020). This necessitates an empirical art of composing and formatting the prompt to maximize a\nmodel\u2019s performance on a desired task, which is known as prompt engineering or prompt hacking.\nFine-tuning retrains a model pre-trained on general domains to a speci\ufb01c task Devlin et al. (2019b);\nRadford et al. (a). Variants of it include learning just a subset of the parameters Devlin et al."
+      }
+    ]
+  },
+  {
+    "question": "What's the difference between few-shot and zero-shot for GPT-3?",
+    "expected_source": "gpt3_few_shot.pdf",
+    "context": [
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "While this setting decreases the performance of the smallest model by almost 20%, for GPT-3 it improves accuracy\nby 10%. Finally, the \ufb01ll-in-blank method is not effective one-shot, where it always performs worse than the zero-shot\nsetting. Perhaps this is because all models still require several examples to recognize the pattern.\n12"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "One-shot and few-shot performance make signi\ufb01cant gains\nover zero-shot behavior, matching and exceeding the performance of the SOTA \ufb01ne-tuned open-domain model, RAG\n[LPP+20]\nand/or the style of their answers are out-of-distribution for GPT-3. Nevertheless, GPT-3 appears able to adapt to this\ndistribution, recovering strong performance in the few-shot setting.\nOn Natural Questions (NQs) GPT-3 achieves 14.6% in the zero-shot setting, 23.0% in the one-shot setting, and 29.9% in\nthe few-shot setting, compared to 36.6% for \ufb01ne-tuned T5 11B+SSM. Similar to WebQS, the large gain from zero-shot\nto few-shot may suggest a distribution shift, and may also explain the less competitive performance compared to\nTriviaQA and WebQS."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We\nuse the following \ufb01ll-in-the-blank format:\nAlice was friends with Bob. Alice went to visit her friend .\u2192 Bob\nGeorge bought some baseball equipment, a ball, a glove, and a .\u2192\nWhen presented with examples formatted this way, GPT-3 achieves 86.4% accuracy in the few-shot setting, an increase\nof over 18% from the previous state-of-the-art. We observe that few-shot performance improves strongly with model\nsize. While this setting decreases the performance of the smallest model by almost 20%, for GPT-3 it improves accuracy\nby 10%."
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "We emphasize that these \u201clearning\u201d curves involve no\ngradient updates or \ufb01ne-tuning, just increasing numbers of demonstrations given as conditioning.\nBroadly, on NLP tasks GPT-3 achieves promising results in the zero-shot and one-shot settings, and in the the few-shot\nsetting is sometimes competitive with or even occasionally surpasses state-of-the-art (despite state-of-the-art being held\nby \ufb01ne-tuned models). For example, GPT-3 achieves 81.5 F1 on CoQA in the zero-shot setting, 84.0 F1 on CoQA in\nthe one-shot setting, 85.0 F1 in the few-shot setting. Similarly, GPT-3 achieves 64.3% accuracy on TriviaQA in the\nzero-shot setting, 68.0% in the one-shot setting, and 71.2% in the few-shot setting, the last of which is state-of-the-art\nrelative to \ufb01ne-tuned models operating in the same closed-book setting.\nGPT-3 also displays one-shot and few-shot pro\ufb01ciency at tasks designed to test rapid adaption or"
+      },
+      {
+        "source": "gpt3_few_shot.pdf",
+        "text": "The zero-shot result already outperforms the \ufb01ne-tuned T5-11B by\n14.2%, and also outperforms a version with Q&A tailored span prediction during pre-training by 3.8%. The one-shot\nresult improves by 3.7% and matches the SOTA for an open-domain QA system which not only \ufb01ne-tunes but also\nmakes use of a learned retrieval mechanism over a 15.3B parameter dense vector index of 21M documents [LPP+20].\nGPT-3\u2019s few-shot result further improves performance another 3.2% beyond this.\nOn WebQuestions (WebQs), GPT-3 achieves 14.4% in the zero-shot setting, 25.3% in the one-shot setting, and 41.5%\nin the few-shot setting."
+      }
+    ]
+  }
+]

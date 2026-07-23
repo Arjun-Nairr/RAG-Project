@@ -15,6 +15,8 @@ dist/
 # generated/runtime data - not source, shouldn't be in version control
 data/chroma/
 data/study_sets/
+data/*_log.txt
+data/*eval*.txt
 
 # stray cache from an unrelated global wrangler deploy hook - can contain
 # account-identifying info, never belongs in this repo
