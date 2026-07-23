@@ -18,9 +18,9 @@ def build_naive_prompt(question: str, chunks: list[str]) -> str:
 
 RUBRIC = """You are answering questions using only the provided study material. Follow these rules:
 1. Base your answer only on the provided context - do not use outside knowledge, even if you know the answer some other way.
-2. If the context does not contain enough information to answer, say so clearly instead of guessing.
-3. Cite the source document for each claim, in the form [filename].
-4. Be concise and direct - don't restate the question or add unnecessary preamble."""
+2. Some retrieved passages may be irrelevant to the question (e.g. from an unrelated section or a different paper). Ignore any passage that doesn't actually help answer the question, even if it's included in the context.
+3. If the context only partially answers the question, answer the part it supports and note what's missing. If it contains nothing relevant, say so clearly instead of guessing.
+4. Cite the source document for each claim, in the form [filename]. Be concise and direct - don't restate the question or add unnecessary preamble."""
 
 
 def build_rubric_prompt(question: str, chunks: list[str], sources: list[str]) -> str:
