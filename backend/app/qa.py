@@ -42,7 +42,7 @@ def build_prompt(question: str, chunks: list[str], sources: list[str], prompt_st
 
 
 def answer_question(
-    study_set_id: str, question: str, top_k: int = 5, prompt_style: str = "naive"
+    study_set_id: str, question: str, top_k: int = 5, prompt_style: str = "rubric"
 ) -> dict:
     results = retrieve(study_set_id, question, top_k)
     chunks = [r["text"] for r in results]

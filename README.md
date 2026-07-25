@@ -33,7 +33,7 @@ PDF upload → text extraction → chunking → embedding → vector store index
 
 **Async upload pipeline** — uploading a study set returns immediately (`status: "uploaded"`); a background task (FastAPI `BackgroundTasks`) does the actual chunk → embed → index work, updating status to `"processing"` then `"ready"` (or `"error"`). The frontend polls for status rather than blocking on upload.
 
-**Generation** — retrieved chunks + the question get assembled into a prompt and sent to Groq. Two prompt strategies exist side by side (see Evaluation below): a naive baseline (context + question, no instructions) and a rubric-guided version.
+**Generation** — retrieved chunks + the question get assembled into a prompt and sent to Groq. Two prompt strategies exist side by side (see Evaluation below): a naive baseline (context + question, no instructions) and a rubric-guided version. The live `/ask` endpoint defaults to the rubric prompt; the naive one is kept for comparison in the eval tooling.
 
 ## Evaluation
 
@@ -61,7 +61,7 @@ Indexed as a single Chroma collection (`test_corpus`, 1,193 chunks total) — se
 | Generation (the answer being evaluated) | `llama-3.3-70b-versatile` (Groq) | same model used by the live app |
 | Judge (grading the generated answers) | `llama-3.3-70b-versatile` (Groq) | **same model as generation** — a known limitation, see below |
 
-Using the same model as both generator and judge is a real, documented weakness (self-preference bias — a model tends to rate its own reasoning style more favorably than an independent judge would). The honest framing: these generation-eval numbers are a first-pass signal, not a rigorously validated one. A stronger version of this eval would swap the judge to a model from a different lineage (e.g. `openai/gpt-oss-120b`, also available on Groq) — noted here as a known next step, not silently glossed over.
+Using the same model as both generator and judge is a real, documented weakness (self-preference bias — a model tends to rate its own reasoning style more favorably than an independent judge would). This was one of two reasons the automated judge was ultimately abandoned in favor of a manual review (the other being Groq free-tier rate limits) — see the Generation evaluation section below. A stronger automated version would swap the judge to a model from a different lineage (e.g. `openai/gpt-oss-120b`, also available on Groq) — noted here as a known next step, not silently glossed over.
 
 ### Retrieval evaluation — hit rate + MRR
 
@@ -75,27 +75,27 @@ Using the same model as both generator and judge is a real, documented weakness 
 
 Honest caveat: this is a 5-document corpus. 100% hit rate reflects that retrieval is not being asked to discriminate between hundreds of similar documents — it's a real, correctly-measured result, but the ceiling is easier to reach at this corpus size than it would be at scale.
 
-### Generation evaluation — LLM-as-judge, naive vs. rubric
+### Generation evaluation — naive vs. rubric
 
-**Method:** the same 25 questions, run twice — once through a naive prompt (just the retrieved context and the question, no instructions), once through a rubric-guided prompt. Every generated answer is then scored by a second LLM call (the judge — see model table above) against two binary criteria. Judge prompt and parsing logic: `backend/evals/judge.py`. Comparison runner: `backend/evals/run_generation_eval.py`.
+Unlike retrieval, generation quality has no objective ground truth to check against, so this eval is qualitative. The methodology below reflects what was actually done, including a course-correction worth being honest about.
 
-Criteria the judge is explicitly instructed to check, verbatim from the judge prompt:
+**What was originally built (and why it was abandoned):** a fully automated LLM-as-judge A/B — run all 25 questions through both a naive and a rubric prompt, then have a second LLM call grade every answer on two binary criteria (**grounded**: every claim supported by the retrieved context; **relevant**: actually answers the question). The code exists — `backend/evals/judge.py` (judge prompt + parsing) and `backend/evals/run_generation_eval.py` (runner) — but it was **abandoned in practice**: it needs ~100 Groq calls per run (50 generate + 50 judge), and the free tier's rate limits (30 req/min, 12k tokens/min) made a full batch unreliably slow to complete. It also had a real methodological weakness regardless of speed — the judge used the *same* model as the generator (self-preference bias; see the models table above).
 
-- **Grounded** — true if every factual claim in the answer is supported by the retrieved context; false if the answer includes information not present in the context, or makes claims the context doesn't support. This is the core RAG-specific failure mode (hallucination) — an answer can be well-written and still fail this.
-- **Relevant** — true if the answer actually addresses the question asked; false if it's off-topic, evasive, or doesn't engage with the question.
+**What was actually done instead:** a manual, human-in-the-loop review. Real question + retrieved-context pairs were exported **without** any generation (`qa.retrieve()` only — fast, local, no Groq quota spent), then a naive vs. rubric comparison was reviewed by hand across those cases, and the rubric was iteratively tightened based on the failures that surfaced. This traded a quantitative score for the ability to actually inspect *why* one prompt beat the other, which is what drove the rubric's final wording.
 
-**The rubric being tested** (four rules, given to the model as explicit instructions before the naive baseline is run again with them added):
+**The final rubric** (now the live default in `qa.py` — the `/ask` endpoint uses it):
 1. Base the answer only on the provided context — no outside knowledge, even if the model "knows" the answer another way.
-2. If the context doesn't contain the answer, say so explicitly instead of guessing.
-3. Attribute claims to their source document.
-4. Be concise — no restating the question, no filler.
+2. Some retrieved passages may be irrelevant (from an unrelated section or a different paper) — ignore any passage that doesn't actually help, even though it's in the context.
+3. If the context only partially answers, answer the supported part and note what's missing; if nothing is relevant, say so instead of guessing.
+4. Cite the source document per claim as `[filename]`; be concise — no restating the question, no filler.
 
-**Result:** _pending — being run now, will be filled in below._
+Rules 2 and 3 came directly from the manual review: one real test case retrieved an off-topic chunk from a different paper mixed into an on-topic question's context, and the naive prompt got pulled off by it — rule 2 targets exactly that. Rule 3 replaced a cruder binary "answer / say you can't" with graceful handling of *partial* coverage.
 
-| Prompt style | Grounded | Relevant |
-|---|---|---|
-| Naive (baseline) | TBD | TBD |
-| Rubric | TBD | TBD |
+**Evidence (honest about its size):**
+- One concrete before/after from the manual review — for *"How does positional encoding work in the Transformer?"*, the naive answer hallucinated (unsupported claim), while the rubric answer stayed grounded. A single data point, not a percentage.
+- Live end-to-end verification on the real 5-paper corpus: asked *"Why did the Transformer get rid of recurrence?"* — retrieval came back noisy (chunks from `lora.pdf`, `gpt3_few_shot.pdf`, `bert.pdf` mixed in with the correct `attention_is_all_you_need.pdf`), and the rubric answer correctly used and cited **only** the relevant source, ignoring the off-topic chunks. Rule 2 working on a real, uncherry-picked case.
+
+No aggregate grounded/relevant percentages are claimed for generation — that would require the automated judge that was abandoned, and inventing numbers would be dishonest. The retrieval eval above (100% / 0.9533) is the quantitative, defensible result; generation quality is supported qualitatively.
 
 ## Known limitations
 
@@ -126,5 +126,5 @@ npm run dev
 ```bash
 cd backend
 python -m evals.run_retrieval_eval [collection_name] [top_k]
-python -m evals.run_generation_eval [collection_name] [top_k]
+python -m evals.run_generation_eval [collection_name] [top_k]   # automated judge — kept but not the final methodology (see Generation evaluation); needs Groq quota headroom to finish a full run
 ```

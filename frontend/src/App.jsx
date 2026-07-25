@@ -17,6 +17,12 @@ function App() {
   const [result, setResult] = useState(null)
   const inputRef = useRef(null)
 
+  // ask flow (only active once a study set is ready)
+  const [question, setQuestion] = useState('')
+  const [asking, setAsking] = useState(false)
+  const [answer, setAnswer] = useState(null)
+  const [askError, setAskError] = useState('')
+
   const addFiles = useCallback((fileList) => {
     const pdfs = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.pdf'))
     setFiles((prev) => {
@@ -70,11 +76,38 @@ function App() {
     }
   }
 
+  const handleAsk = async () => {
+    const q = question.trim()
+    if (!q) return
+    setAsking(true)
+    setAskError('')
+    setAnswer(null)
+    try {
+      const res = await fetch(`${API_BASE}/study-sets/${result.id}/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question: q }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.detail || `Request failed (${res.status})`)
+      }
+      setAnswer(await res.json())
+    } catch (err) {
+      setAskError(String(err.message || err))
+    } finally {
+      setAsking(false)
+    }
+  }
+
   const reset = () => {
     setFiles([])
     setName('')
     setResult(null)
     setStatus('idle')
+    setQuestion('')
+    setAnswer(null)
+    setAskError('')
   }
 
   return (
@@ -94,13 +127,50 @@ function App() {
             <div className="result-icon">✓</div>
             <h2>{result.name}</h2>
             <p className="subtitle">Ready — {result.files.length} file(s) indexed</p>
-            <ul className="file-list">
-              {result.files.map((f) => (
-                <li key={f} className="file-row">
-                  <span className="file-name">{f}</span>
-                </li>
-              ))}
-            </ul>
+
+            <div className="ask-section">
+              <textarea
+                className="ask-input"
+                placeholder="Ask a question about these documents..."
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault()
+                    handleAsk()
+                  }
+                }}
+                rows={2}
+              />
+              <button className="btn" disabled={!question.trim() || asking} onClick={handleAsk}>
+                {asking ? 'Thinking…' : 'Ask'}
+              </button>
+
+              {askError && <p className="error-text">{askError}</p>}
+
+              {answer && (
+                <div className="answer-block">
+                  <div className="answer-text">{answer.answer}</div>
+                  {answer.sources?.length > 0 && (
+                    <details className="sources">
+                      <summary>{answer.sources.length} source chunk(s) retrieved</summary>
+                      <ul className="source-list">
+                        {answer.sources.map((s, i) => (
+                          <li key={i} className="source-item">
+                            <div className="source-head">
+                              <span className="source-name">{s.source}</span>
+                              <span className="source-dist">distance {s.distance.toFixed(3)}</span>
+                            </div>
+                            <p className="source-snippet">{s.text}</p>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  )}
+                </div>
+              )}
+            </div>
+
             <button className="btn btn-secondary" onClick={reset}>
               Upload another
             </button>
