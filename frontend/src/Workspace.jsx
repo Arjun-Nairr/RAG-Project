@@ -1,4 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import Markdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
+import BrandMark from './BrandMark'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -24,15 +28,65 @@ function Sources({ sources }) {
   )
 }
 
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* clipboard blocked - ignore */
+    }
+  }
+  return (
+    <button className="copy-btn" onClick={copy} title="Copy answer">
+      {copied ? '✓ Copied' : 'Copy'}
+    </button>
+  )
+}
+
+function AnswerBubble({ message }) {
+  const { answer, sources, streaming } = message
+  return (
+    <div className="bubble bubble-a">
+      {answer ? (
+        <div className="answer-text">
+          <Markdown remarkPlugins={[remarkGfm]}>{answer}</Markdown>
+          {streaming && <span className="stream-cursor" />}
+        </div>
+      ) : (
+        <span className="thinking-dots">
+          <i></i><i></i><i></i>
+        </span>
+      )}
+      <Sources sources={sources} />
+      {!streaming && answer && <CopyButton text={answer} />}
+    </div>
+  )
+}
+
 function Workspace({ studySet, onReset }) {
   const [messages, setMessages] = useState([])
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
   const [askError, setAskError] = useState('')
   const [activeFile, setActiveFile] = useState(studySet.files[0] || null)
+  const [dragging, setDragging] = useState(false)
   const threadRef = useRef(null)
 
-  // load persisted history when the workspace opens
+  // patch the most recent message immutably (used while streaming)
+  const patchLast = (patch) =>
+    setMessages((prev) => {
+      if (prev.length === 0) return prev
+      const copy = prev.slice()
+      const last = copy[copy.length - 1]
+      copy[copy.length - 1] = typeof patch === 'function' ? patch(last) : { ...last, ...patch }
+      return copy
+    })
+
+  // load persisted history when the workspace opens (these render as full,
+  // non-streaming answers)
   useEffect(() => {
     let cancelled = false
     fetch(`${API_BASE}/study-sets/${studySet.id}/history`)
@@ -44,16 +98,17 @@ function Workspace({ studySet, onReset }) {
             question: row.question,
             answer: row.answer,
             sources: row.sources || [],
+            streaming: false,
           }))
         )
       })
-      .catch(() => {}) // history is best-effort; a failure just shows an empty thread
+      .catch(() => {})
     return () => {
       cancelled = true
     }
   }, [studySet.id])
 
-  // keep the thread pinned to the newest turn
+  // keep the thread pinned to the newest turn as it grows
   useEffect(() => {
     const el = threadRef.current
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
@@ -64,58 +119,81 @@ function Workspace({ studySet, onReset }) {
     if (!q || asking) return
     setAsking(true)
     setAskError('')
+    setQuestion('')
+    // placeholder we fill as the stream arrives
+    setMessages((prev) => [...prev, { question: q, answer: '', sources: [], streaming: true }])
+
     try {
       const res = await fetch(`${API_BASE}/study-sets/${studySet.id}/ask`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: q }),
       })
-      if (!res.ok) {
+      if (!res.ok || !res.body) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.detail || `Request failed (${res.status})`)
       }
-      const data = await res.json()
-      setMessages((prev) => [...prev, { question: q, answer: data.answer, sources: data.sources }])
-      setQuestion('')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() // keep the trailing partial line
+        for (const line of lines) {
+          if (!line.trim()) continue
+          const evt = JSON.parse(line)
+          if (evt.type === 'sources') {
+            patchLast((m) => ({ ...m, sources: evt.sources }))
+          } else if (evt.type === 'delta') {
+            patchLast((m) => ({ ...m, answer: m.answer + evt.text }))
+          } else if (evt.type === 'done') {
+            patchLast((m) => ({ ...m, streaming: false }))
+          }
+        }
+      }
+      patchLast((m) => ({ ...m, streaming: false }))
     } catch (err) {
       setAskError(String(err.message || err))
+      patchLast((m) => ({ ...m, streaming: false, answer: m.answer || '_(failed to answer)_' }))
     } finally {
       setAsking(false)
     }
   }
 
   return (
-    <div className="workspace">
-      <section className="pane pane-chat">
+    <div className={`workspace ${dragging ? 'dragging' : ''}`}>
+      <PanelGroup direction="horizontal" autoSaveId="rag-workspace-split">
+        <Panel className="pane pane-chat" defaultSize={42} minSize={26} maxSize={68} order={1}>
         <header className="pane-head">
-          <div>
-            <h2 className="ws-title">{studySet.name}</h2>
-            <p className="ws-sub">{studySet.files.length} document(s) · ask anything below</p>
+          <div className="pane-head-left">
+            <BrandMark size={30} />
+            <div>
+              <h2 className="ws-title">{studySet.name}</h2>
+              <p className="ws-sub">{studySet.files.length} document(s) · ask anything below</p>
+            </div>
           </div>
           <button className="btn-ghost" onClick={onReset}>+ New</button>
         </header>
 
         <div className="thread" ref={threadRef}>
-          {messages.length === 0 && !asking && (
-            <p className="thread-empty">
-              No questions yet. Ask something about your documents to get started.
-            </p>
+          {messages.length === 0 && (
+            <div className="thread-empty">
+              <div className="thread-empty-icon" aria-hidden="true">
+                <BrandMark size={40} />
+              </div>
+              <p>No questions yet.<br />Ask something about your documents to get started.</p>
+            </div>
           )}
           {messages.map((m, i) => (
             <div key={i} className="turn">
               <div className="bubble bubble-q">{m.question}</div>
-              <div className="bubble bubble-a">
-                <div className="answer-text">{m.answer}</div>
-                <Sources sources={m.sources} />
-              </div>
+              <AnswerBubble message={m} />
             </div>
           ))}
-          {asking && (
-            <div className="turn">
-              <div className="bubble bubble-q">{question.trim()}</div>
-              <div className="bubble bubble-a thinking">Thinking…</div>
-            </div>
-          )}
         </div>
 
         <div className="ask-bar">
@@ -139,9 +217,11 @@ function Workspace({ studySet, onReset }) {
             </button>
           </div>
         </div>
-      </section>
+        </Panel>
 
-      <section className="pane pane-viewer">
+        <PanelResizeHandle className="resize-handle" onDragging={setDragging} />
+
+        <Panel className="pane pane-viewer" minSize={32} order={2}>
         {studySet.files.length > 1 && (
           <div className="viewer-tabs">
             {studySet.files.map((f) => (
@@ -165,7 +245,8 @@ function Workspace({ studySet, onReset }) {
         ) : (
           <div className="viewer-empty">No file to display</div>
         )}
-      </section>
+        </Panel>
+      </PanelGroup>
     </div>
   )
 }

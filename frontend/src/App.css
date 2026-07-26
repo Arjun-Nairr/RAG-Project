@@ -190,6 +190,12 @@
   background: var(--bg);
 }
 
+/* PanelGroup fills the fixed workspace */
+[data-panel-group] {
+  height: 100%;
+  width: 100%;
+}
+
 .pane {
   display: flex;
   flex-direction: column;
@@ -197,14 +203,28 @@
   min-width: 0;
 }
 
-.pane-chat {
-  flex: 0 0 clamp(380px, 42%, 620px);
-  border-right: 1px solid var(--border);
+.pane-viewer {
+  background: var(--code-bg);
 }
 
-.pane-viewer {
-  flex: 1;
-  background: var(--code-bg);
+/* draggable divider between the two panes */
+.resize-handle {
+  width: 6px;
+  flex-shrink: 0;
+  background: var(--border);
+  cursor: col-resize;
+  transition: background 0.15s;
+}
+
+.resize-handle:hover,
+.resize-handle[data-resize-handle-state='hover'],
+.resize-handle[data-resize-handle-state='drag'] {
+  background: var(--accent);
+}
+
+/* while dragging, stop the PDF iframe from swallowing mouse events */
+.workspace.dragging .pdf-frame {
+  pointer-events: none;
 }
 
 .pane-head {
@@ -254,11 +274,21 @@
 }
 
 .thread-empty {
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
   color: var(--text);
   font-size: 14px;
-  margin: auto;
   text-align: center;
-  max-width: 260px;
+  max-width: 280px;
+  line-height: 1.5;
+}
+
+.thread-empty-icon {
+  opacity: 0.9;
+  filter: drop-shadow(0 8px 20px var(--accent-bg));
 }
 
 .turn {
@@ -290,14 +320,132 @@
   border: 1px solid var(--border);
 }
 
-.bubble-a.thinking {
-  color: var(--text);
-  font-style: italic;
-}
-
 .answer-text {
   color: var(--text-h);
-  white-space: pre-wrap;
+}
+
+/* markdown-rendered answer content */
+.answer-text > :first-child {
+  margin-top: 0;
+}
+.answer-text > :last-child {
+  margin-bottom: 0;
+}
+.answer-text p {
+  margin: 0 0 10px;
+}
+.answer-text ul,
+.answer-text ol {
+  margin: 0 0 10px;
+  padding-left: 22px;
+}
+.answer-text li {
+  margin: 2px 0;
+}
+.answer-text h1,
+.answer-text h2,
+.answer-text h3 {
+  font-size: 15px;
+  margin: 14px 0 6px;
+}
+.answer-text code {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-family: var(--mono);
+  font-size: 0.88em;
+}
+.answer-text pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+}
+.answer-text pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.answer-text a {
+  color: var(--accent);
+}
+.answer-text table {
+  border-collapse: collapse;
+  margin: 0 0 10px;
+  font-size: 13px;
+}
+.answer-text th,
+.answer-text td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+}
+
+/* blinking cursor at the end of a streaming answer */
+.stream-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--accent);
+  animation: blink 1s steps(2, start) infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* animated "thinking" dots before the first token arrives */
+.thinking-dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 2px 0;
+}
+.thinking-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text);
+  opacity: 0.4;
+  animation: dot 1.2s infinite ease-in-out;
+}
+.thinking-dots i:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.thinking-dots i:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes dot {
+  0%,
+  60%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+
+/* copy-answer button */
+.copy-btn {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--sans);
+}
+.copy-btn:hover {
+  border-color: var(--accent-border);
+  color: var(--text-h);
 }
 
 /* sources (rendered inside answer bubbles) */
@@ -461,5 +609,76 @@
   .pane-viewer {
     flex: 1 1 60vh;
     min-height: 60vh;
+  }
+}
+
+/* ---------- visual identity + motion ---------- */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.brand-name {
+  font-weight: 600;
+  color: var(--text-h);
+  letter-spacing: -0.2px;
+  font-size: 16px;
+}
+
+.pane-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.pane-head-left > div {
+  min-width: 0;
+}
+
+/* primary button: subtle gradient + press feedback */
+.btn {
+  background-image: linear-gradient(
+    135deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 72%, #000 28%)
+  );
+  transition: filter 0.15s, transform 0.1s, opacity 0.15s;
+}
+.btn:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+.btn:not(:disabled):active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.btn-ghost,
+.copy-btn,
+.viewer-tab {
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+/* new conversation turns rise in */
+.turn {
+  animation: rise 0.28s ease both;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn,
+  .stream-cursor,
+  .thinking-dots i {
+    animation: none;
   }
 }

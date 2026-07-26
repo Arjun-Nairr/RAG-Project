@@ -1,11 +1,12 @@
+import json
 import shutil
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 
-from app import processing, qa, storage, study_sets
+from app import generation, processing, qa, storage, study_sets
 
 
 class AskRequest(BaseModel):
@@ -77,17 +78,33 @@ def ask_question(study_set_id: str, request: AskRequest):
             status_code=400,
             detail=f"study set is not ready yet (status: {study_set['status']})",
         )
-    result = qa.answer_question(study_set_id, request.question)
 
-    # best-effort persist - never lose a (paid-for) answer over a storage hiccup
-    try:
-        storage.save_question(
-            study_set_id, request.question, result["answer"], result["sources"]
-        )
-    except Exception as e:
-        print(f"[warning] failed to save question history: {e}")
+    # stream the answer as NDJSON: one {sources} line, then many {delta} lines,
+    # then a {done} line. Retrieval runs first (so sources are known up front),
+    # then tokens are forwarded live, then the assembled answer is persisted.
+    def event_stream():
+        results = qa.retrieve(study_set_id, request.question)
+        yield json.dumps({"type": "sources", "sources": results}) + "\n"
 
-    return result
+        chunks = [r["text"] for r in results]
+        sources = [r["source"] for r in results]
+        prompt = qa.build_prompt(request.question, chunks, sources, "rubric")
+
+        parts = []
+        for delta in generation.generate_stream(prompt):
+            parts.append(delta)
+            yield json.dumps({"type": "delta", "text": delta}) + "\n"
+
+        answer = "".join(parts)
+        # best-effort persist - never fail the response over a storage hiccup
+        try:
+            storage.save_question(study_set_id, request.question, answer, results)
+        except Exception as e:
+            print(f"[warning] failed to save question history: {e}")
+
+        yield json.dumps({"type": "done"}) + "\n"
+
+    return StreamingResponse(event_stream(), media_type="application/x-ndjson")
 
 
 @app.get("/study-sets/{study_set_id}/history")

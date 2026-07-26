@@ -53,3 +53,33 @@ def generate(prompt: str, max_retries: int = 5) -> str:
             if retry_after:
                 wait = float(retry_after) + 2
             time.sleep(wait)
+
+
+def generate_stream(prompt: str, max_retries: int = 5):
+    """Streaming variant of generate() - yields answer text as it's produced,
+    so callers can forward tokens to the client live. Same swappable interface:
+    only this body changes if the provider changes."""
+    client = _get_client()
+
+    for attempt in range(max_retries):
+        try:
+            stream = client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[{"role": "user", "content": prompt}],
+                stream=True,
+            )
+            for chunk in stream:
+                delta = chunk.choices[0].delta.content
+                if delta:
+                    yield delta
+            return
+        except RateLimitError as e:
+            if attempt == max_retries - 1:
+                raise
+            wait = 65
+            retry_after = getattr(e, "response", None) and e.response.headers.get(
+                "retry-after"
+            )
+            if retry_after:
+                wait = float(retry_after) + 2
+            time.sleep(wait)

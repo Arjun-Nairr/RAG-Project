@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react'
 import './App.css'
 import Workspace from './Workspace'
+import BrandMark from './BrandMark'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -86,6 +87,10 @@ function App() {
   return (
     <div className="page">
       <div className="card">
+        <div className="brand">
+          <BrandMark />
+          <span className="brand-name">Study Assistant</span>
+        </div>
         <h1>New study set</h1>
         <p className="subtitle">Upload the PDFs you want to ask questions about.</p>
 
