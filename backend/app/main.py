@@ -2,6 +2,7 @@ import shutil
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app import processing, qa, storage, study_sets
@@ -92,3 +93,18 @@ def ask_question(study_set_id: str, request: AskRequest):
 @app.get("/study-sets/{study_set_id}/history")
 def get_history(study_set_id: str):
     return {"history": storage.get_history(study_set_id)}
+
+
+@app.get("/study-sets/{study_set_id}/files/{filename}")
+def get_file(study_set_id: str, filename: str):
+    study_set = study_sets.get_study_set(study_set_id)
+    if study_set is None:
+        raise HTTPException(status_code=404, detail="study set not found")
+    # only serve filenames that belong to this study set - blocks path traversal
+    if filename not in study_set["files"]:
+        raise HTTPException(status_code=404, detail="file not in this study set")
+    path = study_sets.study_set_dir(study_set_id) / filename
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="file missing on disk")
+    # inline so the browser renders it in the iframe instead of downloading
+    return FileResponse(path, media_type="application/pdf", content_disposition_type="inline")

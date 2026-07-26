@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import './App.css'
+import Workspace from './Workspace'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -13,15 +14,9 @@ function App() {
   const [files, setFiles] = useState([])
   const [name, setName] = useState('')
   const [dragActive, setDragActive] = useState(false)
-  const [status, setStatus] = useState('idle') // idle | uploading | done | error
+  const [status, setStatus] = useState('idle') // idle | uploading | processing | done | error
   const [result, setResult] = useState(null)
   const inputRef = useRef(null)
-
-  // ask flow (only active once a study set is ready)
-  const [question, setQuestion] = useState('')
-  const [asking, setAsking] = useState(false)
-  const [answer, setAnswer] = useState(null)
-  const [askError, setAskError] = useState('')
 
   const addFiles = useCallback((fileList) => {
     const pdfs = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.pdf'))
@@ -76,38 +71,16 @@ function App() {
     }
   }
 
-  const handleAsk = async () => {
-    const q = question.trim()
-    if (!q) return
-    setAsking(true)
-    setAskError('')
-    setAnswer(null)
-    try {
-      const res = await fetch(`${API_BASE}/study-sets/${result.id}/ask`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: q }),
-      })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        throw new Error(body.detail || `Request failed (${res.status})`)
-      }
-      setAnswer(await res.json())
-    } catch (err) {
-      setAskError(String(err.message || err))
-    } finally {
-      setAsking(false)
-    }
-  }
-
   const reset = () => {
     setFiles([])
     setName('')
     setResult(null)
     setStatus('idle')
-    setQuestion('')
-    setAnswer(null)
-    setAskError('')
+  }
+
+  // once a study set is ready, hand off to the full-screen two-pane workspace
+  if (status === 'done') {
+    return <Workspace studySet={result} onReset={reset} />
   }
 
   return (
@@ -120,60 +93,9 @@ function App() {
           <div className="result">
             <div className="result-icon">…</div>
             <h2>{result.name}</h2>
-            <p className="subtitle">Processing {result.files.length} file(s) — chunking, embedding, indexing...</p>
-          </div>
-        ) : status === 'done' ? (
-          <div className="result">
-            <div className="result-icon">✓</div>
-            <h2>{result.name}</h2>
-            <p className="subtitle">Ready — {result.files.length} file(s) indexed</p>
-
-            <div className="ask-section">
-              <textarea
-                className="ask-input"
-                placeholder="Ask a question about these documents..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault()
-                    handleAsk()
-                  }
-                }}
-                rows={2}
-              />
-              <button className="btn" disabled={!question.trim() || asking} onClick={handleAsk}>
-                {asking ? 'Thinking…' : 'Ask'}
-              </button>
-
-              {askError && <p className="error-text">{askError}</p>}
-
-              {answer && (
-                <div className="answer-block">
-                  <div className="answer-text">{answer.answer}</div>
-                  {answer.sources?.length > 0 && (
-                    <details className="sources">
-                      <summary>{answer.sources.length} source chunk(s) retrieved</summary>
-                      <ul className="source-list">
-                        {answer.sources.map((s, i) => (
-                          <li key={i} className="source-item">
-                            <div className="source-head">
-                              <span className="source-name">{s.source}</span>
-                              <span className="source-dist">distance {s.distance.toFixed(3)}</span>
-                            </div>
-                            <p className="source-snippet">{s.text}</p>
-                          </li>
-                        ))}
-                      </ul>
-                    </details>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <button className="btn btn-secondary" onClick={reset}>
-              Upload another
-            </button>
+            <p className="subtitle">
+              Processing {result.files.length} file(s) — chunking, embedding, indexing...
+            </p>
           </div>
         ) : (
           <>
@@ -232,7 +154,9 @@ function App() {
               disabled={files.length === 0 || status === 'uploading'}
               onClick={handleUpload}
             >
-              {status === 'uploading' ? 'Uploading...' : `Upload ${files.length || ''} document${files.length === 1 ? '' : 's'}`}
+              {status === 'uploading'
+                ? 'Uploading...'
+                : `Upload ${files.length || ''} document${files.length === 1 ? '' : 's'}`}
             </button>
           </>
         )}
