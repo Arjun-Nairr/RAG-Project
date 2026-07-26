@@ -139,6 +139,9 @@ function AnswerBubble({ message }) {
 }
 
 function Workspace({ studySet, onReset }) {
+  const isUnreadable = studySet.text_quality === 'unreadable'
+  const isLowQuality = studySet.text_quality === 'low'
+
   const [messages, setMessages] = useState([])
   const [question, setQuestion] = useState('')
   const [asking, setAsking] = useState(false)
@@ -322,6 +325,27 @@ function Workspace({ studySet, onReset }) {
             </button>
           </header>
 
+          {isLowQuality && (
+            <div className="quality-banner quality-warn">
+              This document's text looks unclear (common with scans or handwriting) —
+              answers may vary.
+            </div>
+          )}
+
+          {isUnreadable ? (
+            <div className="thread">
+              <div className="quality-banner quality-block">
+                <strong>Couldn't read this document's text.</strong>
+                <p>
+                  This looks like a scanned image or handwriting with no readable text
+                  layer, so there's nothing to search or answer from. You can still view
+                  the file on the right — try re-uploading a typed or OCR'd version to ask
+                  questions about it.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
           <div className="thread" ref={threadRef}>
             {messages.length === 0 && (
               <div className="thread-empty">
@@ -371,6 +395,8 @@ function Workspace({ studySet, onReset }) {
               </button>
             </div>
           </div>
+            </>
+          )}
         </Panel>
 
         <PanelResizeHandle className="resize-handle" onDragging={setDragging} />

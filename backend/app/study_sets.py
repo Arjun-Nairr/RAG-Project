@@ -37,5 +37,11 @@ def update_status(study_set_id: str, status: str, error: str | None = None) -> N
         study_set["error"] = error
 
 
+def set_text_quality(study_set_id: str, quality: str, score: float) -> None:
+    study_set = STUDY_SETS[study_set_id]
+    study_set["text_quality"] = quality
+    study_set["text_quality_score"] = round(score, 3)
+
+
 def list_study_sets() -> list[dict]:
     return list(STUDY_SETS.values())

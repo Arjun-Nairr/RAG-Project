@@ -291,6 +291,42 @@
   filter: drop-shadow(0 8px 20px var(--accent-bg));
 }
 
+/* text-quality banners (shown once, computed at upload/processing time) */
+.quality-banner {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.quality-warn {
+  margin: 14px 20px 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #f5a623 15%, var(--bg));
+  border: 1px solid color-mix(in srgb, #f5a623 45%, var(--border));
+  color: var(--text-h);
+}
+
+.quality-block {
+  flex: 1;
+  margin: 20px;
+  padding: 24px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  background: color-mix(in srgb, #e5484d 10%, var(--bg));
+  border: 1px solid color-mix(in srgb, #e5484d 35%, var(--border));
+  color: var(--text-h);
+}
+
+.quality-block p {
+  color: var(--text);
+  max-width: 340px;
+}
+
 /* suggested starter questions */
 .prompt-chips {
   display: flex;

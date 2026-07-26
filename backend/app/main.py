@@ -78,6 +78,15 @@ def ask_question(study_set_id: str, request: AskRequest):
             status_code=400,
             detail=f"study set is not ready yet (status: {study_set['status']})",
         )
+    if study_set.get("text_quality") == "unreadable":
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "This document's text couldn't be read clearly (common with scanned "
+                "images or handwriting with no usable text layer), so there's nothing "
+                "to search or answer from."
+            ),
+        )
 
     # stream the answer as NDJSON: one {sources} line, then many {delta} lines,
     # then a {done} line. Retrieval runs first (so sources are known up front),
