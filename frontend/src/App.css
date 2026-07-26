@@ -291,6 +291,36 @@
   filter: drop-shadow(0 8px 20px var(--accent-bg));
 }
 
+/* suggested starter questions */
+.prompt-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-h);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font-size: 12.5px;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+
+.chip:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.chip:active {
+  transform: translateY(1px);
+}
+
 .turn {
   display: flex;
   flex-direction: column;
@@ -313,6 +343,7 @@
 }
 
 .bubble-a {
+  position: relative;
   align-self: flex-start;
   width: 100%;
   box-sizing: border-box;
@@ -398,6 +429,44 @@
   }
 }
 
+/* inline [file.pdf] citations rendered as pills */
+.cite-pill {
+  display: inline-block;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0 8px;
+  margin: 0 1px;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  vertical-align: baseline;
+  white-space: nowrap;
+}
+
+/* staged loading beat ("Searching your documents" -> "Reading sources") */
+.stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.stage-label {
+  animation: stage-fade 0.25s ease both;
+}
+
+@keyframes stage-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* animated "thinking" dots before the first token arrives */
 .thinking-dots {
   display: inline-flex;
@@ -431,21 +500,47 @@
   }
 }
 
-/* copy-answer button */
+/* copy-answer button: icon only, revealed on hover over the answer */
 .copy-btn {
-  margin-top: 10px;
-  background: transparent;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: var(--bg);
   border: 1px solid var(--border);
-  color: var(--text);
   border-radius: 7px;
-  padding: 4px 10px;
-  font-size: 12px;
+  color: var(--text);
   cursor: pointer;
-  font-family: var(--sans);
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
 }
+
+.bubble-a:hover .copy-btn,
+.copy-btn:focus-visible {
+  opacity: 1;
+}
+
 .copy-btn:hover {
-  border-color: var(--accent-border);
   color: var(--text-h);
+  border-color: var(--accent-border);
+}
+
+.copy-btn.copied {
+  opacity: 1;
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+/* no real hover on touch - keep it visible there */
+@media (hover: none) {
+  .copy-btn {
+    opacity: 1;
+  }
 }
 
 /* sources (rendered inside answer bubbles) */
@@ -482,10 +577,24 @@
 
 .source-head {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+  align-items: center;
   gap: 8px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
+}
+
+.source-num {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .source-name {
@@ -495,13 +604,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.source-dist {
-  color: var(--text);
-  font-size: 11px;
-  font-family: var(--mono);
-  flex-shrink: 0;
 }
 
 .source-snippet {
