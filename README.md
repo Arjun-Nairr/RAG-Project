@@ -87,9 +87,9 @@ Unlike retrieval, generation quality has no objective ground truth to check agai
 1. Base the answer only on the provided context — no outside knowledge, even if the model "knows" the answer another way.
 2. Some retrieved passages may be irrelevant (from an unrelated section or a different paper) — ignore any passage that doesn't actually help, even though it's in the context.
 3. If the context only partially answers, answer the supported part and note what's missing; if nothing is relevant, say so instead of guessing.
-4. Cite the source document per claim as `[filename]`; be concise — no restating the question, no filler.
+4. Be concise and direct — no restating the question, no filler, no inline source citations (sources are shown separately by the app, per-chunk).
 
-Rules 2 and 3 came directly from the manual review: one real test case retrieved an off-topic chunk from a different paper mixed into an on-topic question's context, and the naive prompt got pulled off by it — rule 2 targets exactly that. Rule 3 replaced a cruder binary "answer / say you can't" with graceful handling of *partial* coverage.
+Rules 2 and 3 came directly from the manual review: one real test case retrieved an off-topic chunk from a different paper mixed into an on-topic question's context, and the naive prompt got pulled off by it — rule 2 targets exactly that. Rule 3 replaced a cruder binary "answer / say you can't" with graceful handling of *partial* coverage. Rule 4 originally asked the model to inline-cite `[filename]` after each claim; dropped after real use showed it added no value for single-source answers (the app's sources panel already shows exactly which file/chunk was used) and looked repetitive when the whole answer came from one document.
 
 **Evidence (honest about its size):**
 - One concrete before/after from the manual review — for *"How does positional encoding work in the Transformer?"*, the naive answer hallucinated (unsupported claim), while the rubric answer stayed grounded. A single data point, not a percentage.

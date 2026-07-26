@@ -1,4 +1,4 @@
-import { Children, useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Markdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
@@ -29,38 +29,6 @@ const SUGGESTED_PROMPTS = [
 const STAGE_LABELS = {
   searching: 'Searching your documents',
   reading: 'Reading sources',
-}
-
-/* Turn inline [something.pdf] citations into styled pills. Operates on React
-   children (not raw HTML) so it stays XSS-safe with raw HTML disabled. */
-const CITE_RE = /\[([^\]\n]+?\.pdf)\]/gi
-
-function withCitationPills(children) {
-  return Children.map(children, (child) => {
-    if (typeof child !== 'string') return child
-    const parts = []
-    let last = 0
-    let match
-    CITE_RE.lastIndex = 0
-    while ((match = CITE_RE.exec(child)) !== null) {
-      if (match.index > last) parts.push(child.slice(last, match.index))
-      parts.push(
-        <span className="cite-pill" key={`${match.index}-${match[1]}`}>
-          {match[1]}
-        </span>
-      )
-      last = match.index + match[0].length
-    }
-    if (parts.length === 0) return child
-    if (last < child.length) parts.push(child.slice(last))
-    return parts
-  })
-}
-
-const MD_COMPONENTS = {
-  p: ({ children }) => <p>{withCitationPills(children)}</p>,
-  li: ({ children }) => <li>{withCitationPills(children)}</li>,
-  td: ({ children }) => <td>{withCitationPills(children)}</td>,
 }
 
 function CopyIcon() {
@@ -160,9 +128,7 @@ function AnswerBubble({ message }) {
         </span>
       ) : (
         <div className="answer-text">
-          <Markdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
-            {answer}
-          </Markdown>
+          <Markdown remarkPlugins={[remarkGfm]}>{answer}</Markdown>
           {streaming && <span className="stream-cursor" />}
         </div>
       )}
