@@ -4,13 +4,23 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from app import processing, qa, study_sets
+from app import processing, qa, storage, study_sets
 
 
 class AskRequest(BaseModel):
     question: str
 
 app = FastAPI(title="RAG Pipeline API")
+
+
+@app.on_event("startup")
+def _ensure_db():
+    # idempotent; degrade gracefully if the DB is unreachable so the app still
+    # serves (asking works, history just won't persist)
+    try:
+        storage.init_db()
+    except Exception as e:
+        print(f"[warning] question-history DB unavailable at startup: {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -66,4 +76,19 @@ def ask_question(study_set_id: str, request: AskRequest):
             status_code=400,
             detail=f"study set is not ready yet (status: {study_set['status']})",
         )
-    return qa.answer_question(study_set_id, request.question)
+    result = qa.answer_question(study_set_id, request.question)
+
+    # best-effort persist - never lose a (paid-for) answer over a storage hiccup
+    try:
+        storage.save_question(
+            study_set_id, request.question, result["answer"], result["sources"]
+        )
+    except Exception as e:
+        print(f"[warning] failed to save question history: {e}")
+
+    return result
+
+
+@app.get("/study-sets/{study_set_id}/history")
+def get_history(study_set_id: str):
+    return {"history": storage.get_history(study_set_id)}

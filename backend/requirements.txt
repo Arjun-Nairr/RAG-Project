@@ -5,3 +5,5 @@ python-multipart
 sentence-transformers
 chromadb
 groq
+python-dotenv
+psycopg[binary]
