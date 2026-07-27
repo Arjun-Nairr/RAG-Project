@@ -11,6 +11,16 @@ function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+// no name typed - fall back to something derived from what was actually
+// uploaded instead of a generic placeholder, since there's no study-set list
+// where a custom name would help you find it again
+function deriveDefaultName(fileList) {
+  if (fileList.length === 0) return 'Untitled study set'
+  const stripExt = (f) => f.name.replace(/\.pdf$/i, '')
+  if (fileList.length === 1) return stripExt(fileList[0])
+  return `${stripExt(fileList[0])} +${fileList.length - 1} more`
+}
+
 const DEMO_ICONS = { clear: '📄', semi_clear: '⚠️', unreadable: '🚫' }
 
 function DemoPicker({ demos, loading, error, onPick, onClose }) {
@@ -90,7 +100,7 @@ function App() {
   const handleUpload = async () => {
     setStatus('uploading')
     const formData = new FormData()
-    formData.append('name', name || 'Untitled study set')
+    formData.append('name', name.trim() || deriveDefaultName(files))
     files.forEach((f) => formData.append('files', f))
 
     try {
