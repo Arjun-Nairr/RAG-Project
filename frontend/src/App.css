@@ -873,19 +873,48 @@
 }
 
 /* responsive: stack the panes on narrow screens */
-@media (max-width: 820px) {
-  .workspace {
-    flex-direction: column;
-  }
-  .pane-chat {
-    flex: 1 1 auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .pane-viewer {
-    flex: 1 1 60vh;
-    min-height: 60vh;
-  }
+/* mobile: tab switcher instead of the resizable split (react-resizable-panels
+   sizes panes via inline styles a media query can't override, and a drag-to-
+   resize split isn't a sensible touch pattern anyway) */
+.mobile-workspace {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.mobile-tabs {
+  display: flex;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.mobile-tab {
+  flex: 1;
+  padding: 13px;
+  background: var(--bg);
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mobile-tab.active {
+  color: var(--text-h);
+  border-bottom-color: var(--accent);
+}
+
+/* both panes stay mounted (so the PDF never reloads on tab switch), toggled
+   via display instead of conditional rendering */
+.mobile-workspace .pane {
+  display: none;
+}
+
+.mobile-workspace .pane.mobile-pane-active {
+  display: flex;
 }
 
 /* ---------- visual identity + motion ---------- */

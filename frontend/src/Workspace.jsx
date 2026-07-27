@@ -5,6 +5,34 @@ import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import BrandMark from './BrandMark'
 
 const API_BASE = 'http://localhost:8000'
+const MOBILE_BREAKPOINT = 820
+
+// react-resizable-panels sizes its panes via inline styles tied to a fixed
+// "horizontal" direction, which a CSS media query can't override (inline
+// styles always win) - so below the breakpoint we skip PanelGroup entirely
+// and render a tab switcher instead, matching how mobile apps normally
+// handle "two panes of content" rather than trying to force a desktop
+// drag-to-resize split view onto a phone screen.
+function useIsMobile(breakpoint = MOBILE_BREAKPOINT) {
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth <= breakpoint
+  )
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint}px)`)
+    const onChange = () => setIsMobile(window.innerWidth <= breakpoint)
+    onChange()
+    // belt-and-suspenders: matchMedia's own change event is the standard way
+    // to react to this, but a plain resize listener is added too so rotation
+    // or a resized window is never missed on any browser/device combo
+    mql.addEventListener('change', onChange)
+    window.addEventListener('resize', onChange)
+    return () => {
+      mql.removeEventListener('change', onChange)
+      window.removeEventListener('resize', onChange)
+    }
+  }, [breakpoint])
+  return isMobile
+}
 
 // Pacing for the answer reveal. These are *floors*, not added delays: a slow
 // response is already past them and waits no longer. The point is that a very
@@ -198,6 +226,8 @@ function Workspace({ studySet, onReset }) {
   const [askError, setAskError] = useState('')
   const [activeFile, setActiveFile] = useState(studySet.files[0] || null)
   const [dragging, setDragging] = useState(false)
+  const isMobile = useIsMobile()
+  const [activeTab, setActiveTab] = useState('chat')
   // shown once per study set (this component remounts on a fresh upload),
   // requires an explicit OK - not a passive banner
   const [qualityAcked, setQualityAcked] = useState(false)
@@ -362,35 +392,30 @@ function Workspace({ studySet, onReset }) {
     }
   }
 
-  return (
-    <div className={`workspace ${dragging ? 'dragging' : ''}`}>
-      {qualityLevel && !qualityAcked && (
-        <QualityModal level={qualityLevel} onAck={() => setQualityAcked(true)} />
-      )}
-      <PanelGroup direction="horizontal" autoSaveId="rag-workspace-split">
-        <Panel className="pane pane-chat" defaultSize={42} minSize={26} maxSize={68} order={1}>
-          <header className="pane-head">
-            <div className="pane-head-left">
-              <BrandMark size={30} />
-              <div>
-                <h2 className="ws-title">{studySet.name}</h2>
-                <p className="ws-sub">{studySet.files.length} document(s) · ask anything below</p>
-              </div>
-            </div>
-            <button className="btn-ghost" onClick={onReset}>
-              + New
-            </button>
-          </header>
+  const chatContent = (
+    <>
+      <header className="pane-head">
+        <div className="pane-head-left">
+          <BrandMark size={30} />
+          <div>
+            <h2 className="ws-title">{studySet.name}</h2>
+            <p className="ws-sub">{studySet.files.length} document(s) · ask anything below</p>
+          </div>
+        </div>
+        <button className="btn-ghost" onClick={onReset}>
+          + New
+        </button>
+      </header>
 
-          {isUnreadable ? (
-            <div className="thread">
-              <div className="quality-banner quality-block">
-                <strong>{QUALITY_MODAL_COPY.unreadable.title}</strong>
-                <p>{QUALITY_MODAL_COPY.unreadable.body}</p>
-              </div>
-            </div>
-          ) : (
-            <>
+      {isUnreadable ? (
+        <div className="thread">
+          <div className="quality-banner quality-block">
+            <strong>{QUALITY_MODAL_COPY.unreadable.title}</strong>
+            <p>{QUALITY_MODAL_COPY.unreadable.body}</p>
+          </div>
+        </div>
+      ) : (
+        <>
           <div className="thread" ref={threadRef}>
             {messages.length === 0 && (
               <div className="thread-empty">
@@ -440,38 +465,82 @@ function Workspace({ studySet, onReset }) {
               </button>
             </div>
           </div>
-            </>
-          )}
-        </Panel>
+        </>
+      )}
+    </>
+  )
 
-        <PanelResizeHandle className="resize-handle" onDragging={setDragging} />
+  const viewerContent = (
+    <>
+      {studySet.files.length > 1 && (
+        <div className="viewer-tabs">
+          {studySet.files.map((f) => (
+            <button
+              key={f}
+              className={`viewer-tab ${f === activeFile ? 'active' : ''}`}
+              onClick={() => setActiveFile(f)}
+              title={f}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      )}
+      {activeFile ? (
+        <iframe
+          className="pdf-frame"
+          title={activeFile}
+          src={`${API_BASE}/study-sets/${studySet.id}/files/${encodeURIComponent(activeFile)}`}
+        />
+      ) : (
+        <div className="viewer-empty">No file to display</div>
+      )}
+    </>
+  )
 
-        <Panel className="pane pane-viewer" minSize={32} order={2}>
-          {studySet.files.length > 1 && (
-            <div className="viewer-tabs">
-              {studySet.files.map((f) => (
-                <button
-                  key={f}
-                  className={`viewer-tab ${f === activeFile ? 'active' : ''}`}
-                  onClick={() => setActiveFile(f)}
-                  title={f}
-                >
-                  {f}
-                </button>
-              ))}
-            </div>
-          )}
-          {activeFile ? (
-            <iframe
-              className="pdf-frame"
-              title={activeFile}
-              src={`${API_BASE}/study-sets/${studySet.id}/files/${encodeURIComponent(activeFile)}`}
-            />
-          ) : (
-            <div className="viewer-empty">No file to display</div>
-          )}
-        </Panel>
-      </PanelGroup>
+  return (
+    <div className={`workspace ${dragging ? 'dragging' : ''}`}>
+      {qualityLevel && !qualityAcked && (
+        <QualityModal level={qualityLevel} onAck={() => setQualityAcked(true)} />
+      )}
+      {isMobile ? (
+        <div className="mobile-workspace">
+          <div className="mobile-tabs">
+            <button
+              className={`mobile-tab ${activeTab === 'chat' ? 'active' : ''}`}
+              onClick={() => setActiveTab('chat')}
+            >
+              💬 Chat
+            </button>
+            <button
+              className={`mobile-tab ${activeTab === 'document' ? 'active' : ''}`}
+              onClick={() => setActiveTab('document')}
+            >
+              📄 Document
+            </button>
+          </div>
+          <div className={`pane pane-chat ${activeTab === 'chat' ? 'mobile-pane-active' : ''}`}>
+            {chatContent}
+          </div>
+          {/* stays mounted (just hidden) when on the chat tab, so switching
+              tabs never reloads the PDF or loses scroll/zoom position */}
+          <div className={`pane pane-viewer ${activeTab === 'document' ? 'mobile-pane-active' : ''}`}>
+            {viewerContent}
+          </div>
+        </div>
+      ) : (
+        <PanelGroup direction="horizontal" autoSaveId="rag-workspace-split">
+          <Panel className="pane pane-chat" defaultSize={42} minSize={26} maxSize={68} order={1}>
+            {chatContent}
+          </Panel>
+
+          <PanelResizeHandle className="resize-handle" onDragging={setDragging} />
+
+          <Panel className="pane pane-viewer" minSize={32} order={2}>
+            {viewerContent}
+          </Panel>
+        </PanelGroup>
+      )}
     </div>
   )
 }
