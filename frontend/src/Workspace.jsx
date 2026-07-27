@@ -79,6 +79,9 @@ function Sources({ sources }) {
             <div className="source-head">
               <span className="source-num">{i + 1}</span>
               <span className="source-name">{s.source}</span>
+              {typeof s.distance === 'number' && (
+                <span className="source-dist">distance {s.distance.toFixed(3)}</span>
+              )}
             </div>
             <p className="source-snippet">{s.text}</p>
           </li>

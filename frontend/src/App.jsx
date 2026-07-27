@@ -96,7 +96,13 @@ function App() {
 
         {status === 'processing' ? (
           <div className="result">
-            <div className="result-icon">…</div>
+            <div className="result-icon">
+              <span className="thinking-dots">
+                <i></i>
+                <i></i>
+                <i></i>
+              </span>
+            </div>
             <h2>{result.name}</h2>
             <p className="subtitle">
               Processing {result.files.length} file(s) — chunking, embedding, indexing...

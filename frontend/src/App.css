@@ -161,12 +161,18 @@
 .result-icon {
   width: 48px;
   height: 48px;
-  line-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 50%;
   border: 1px solid var(--accent-border);
   color: var(--accent);
   font-size: 24px;
   margin: 0 auto 16px;
+}
+
+.result-icon .thinking-dots i {
+  background: var(--accent);
 }
 
 .result h2 {
@@ -705,12 +711,21 @@
 }
 
 .source-name {
+  flex: 1;
+  min-width: 0;
   color: var(--text-h);
   font-size: 12px;
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.source-dist {
+  flex-shrink: 0;
+  color: var(--text);
+  font-size: 11px;
+  font-family: var(--mono);
 }
 
 .source-snippet {
