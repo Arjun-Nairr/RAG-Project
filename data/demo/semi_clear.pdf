@@ -1,0 +1,46 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 1131 >>
+stream
+BT /F1 11 Tf 40 750 Td (Recurrnt omdls typicaxxy facxor computatiox along xxc smybo) Tj ET
+BT /F1 11 Tf 40 732 Td (oisitoxs cx hte ut nax ouput seqxences. Xxlx inherent) Tj ET
+BT /F1 11 Tf 40 714 Td (scquenila natxre precludes parallleiztaion iwthin xrainng) Tj ET
+BT /F1 11 Tf 40 696 Td (exapes, hwlh becomes cricial ta longer sexuence lnetsh, as) Tj ET
+BT /F1 11 Tf 40 678 Td (memroy constriants liimt batching across exampels.) Tj ET
+BT /F1 11 Tf 40 660 Td () Tj ET
+BT /F1 11 Tf 40 642 Td (Otxention mechonisms xva bcoxe integral part cf compelilng) Tj ET
+BT /F1 11 Tf 40 624 Td (sequece xodeling xx tranduction models x vorious tsks,) Tj ET
+BT /F1 11 Tf 40 606 Td (allowing omdexlng fo dependencis wlthout rgad xc txclr) Tj ET
+BT /F1 11 Tf 40 588 Td (idstanc n htc input cr cutpux sequcces.) Tj ET
+BT /F1 11 Tf 40 570 Td () Tj ET
+BT /F1 11 Tf 40 552 Td (In htl woxk ew prcxoe eh Tansformer, model racihtetcure) Tj ET
+BT /F1 11 Tf 40 534 Td (eschewing ccuxrnece inseta relying entirely no an) Tj ET
+BT /F1 11 Tf 40 516 Td (attcntion mcxanism o xrw xlboal dependencise wteen inptu) Tj ET
+BT /F1 11 Tf 40 498 Td (axd oxupt.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001424 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1494
+%%EOF

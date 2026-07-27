@@ -1,5 +1,6 @@
 import json
 import shutil
+from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,6 +15,17 @@ class AskRequest(BaseModel):
 
 app = FastAPI(title="RAG Pipeline API")
 
+DEMO_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "demo"
+PDFS_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "pdfs"
+# key -> (source path, display name, one-line description shown in the picker)
+DEMO_SPECS = {
+    "clear": (PDFS_DIR / "attention_is_all_you_need.pdf", "Clear document", "Clean, well-grounded answers"),
+    "semi_clear": (DEMO_DIR / "semi_clear.pdf", "Semi-clear document", "See the quality warning in action"),
+    "unreadable": (DEMO_DIR / "unreadable.pdf", "Unreadable document", "See the hard block in action"),
+}
+# key -> study_set dict, populated once at startup so demo clicks are instant
+DEMO_STUDY_SETS: dict[str, dict] = {}
+
 
 @app.on_event("startup")
 def _ensure_db():
@@ -23,6 +35,23 @@ def _ensure_db():
         storage.init_db()
     except Exception as e:
         print(f"[warning] question-history DB unavailable at startup: {e}")
+
+
+@app.on_event("startup")
+def _seed_demos():
+    # processed once here (not per-click) so picking a demo is instant - same
+    # create_study_set + process_study_set path a real upload uses, just fed
+    # from a bundled file instead of one the user picked
+    for key, (source_path, name, _desc) in DEMO_SPECS.items():
+        try:
+            filename = source_path.name
+            study_set = study_sets.create_study_set(name, [filename])
+            target_dir = study_sets.study_set_dir(study_set["id"])
+            shutil.copyfile(source_path, target_dir / filename)
+            processing.process_study_set(study_set["id"])
+            DEMO_STUDY_SETS[key] = study_sets.get_study_set(study_set["id"])
+        except Exception as e:
+            print(f"[warning] failed to seed demo '{key}': {e}")
 
 app.add_middleware(
     CORSMiddleware,
@@ -58,6 +87,16 @@ async def upload_study_set(
 @app.get("/study-sets")
 def get_study_sets():
     return {"study_sets": study_sets.list_study_sets()}
+
+
+@app.get("/demo")
+def get_demo_study_sets():
+    demos = []
+    for key, (_source_path, _name, description) in DEMO_SPECS.items():
+        study_set = DEMO_STUDY_SETS.get(key)
+        if study_set is not None:
+            demos.append({**study_set, "key": key, "description": description})
+    return {"demos": demos}
 
 
 @app.get("/study-sets/{study_set_id}")

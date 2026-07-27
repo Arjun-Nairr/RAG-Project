@@ -420,6 +420,78 @@
   padding: 9px 28px;
 }
 
+/* demo trigger + picker */
+.demo-trigger {
+  margin: -6px auto 20px;
+  display: block;
+  font-size: 13px;
+}
+
+.demo-picker {
+  max-width: 620px;
+  text-align: center;
+}
+
+.demo-picker p {
+  margin-bottom: 20px;
+}
+
+.demo-cards {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.demo-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 12px;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: border-color 0.15s, transform 0.1s, background 0.15s;
+}
+
+.demo-card:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.demo-card:active {
+  transform: translateY(1px);
+}
+
+.demo-card-icon {
+  font-size: 26px;
+}
+
+.demo-card-name {
+  color: var(--text-h);
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.demo-card-desc {
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.demo-close {
+  width: auto;
+}
+
+@media (max-width: 560px) {
+  .demo-cards {
+    flex-direction: column;
+  }
+}
+
 /* suggested starter questions */
 .prompt-chips {
   display: flex;
