@@ -34,6 +34,19 @@ _COMMON_WORDS = {
 # like "months" exist)
 _MAX_PLAUSIBLE_CONSONANT_RUN = 3
 
+# PDFs that position text via glyph offsets instead of literal space
+# characters (common in math/LaTeX-typeset documents) often extract with
+# whole words fused together - "and is bounded" -> "andisbounded". This is a
+# different failure mode than OCR/handwriting noise: individual letters are
+# correct, spacing is lost. The common-word check above misses it, since
+# enough short stopwords usually survive as isolated tokens to keep that
+# ratio looking healthy even when most content words are glued into
+# unreadable blobs. Genuine English words rarely reach 16 characters even in
+# technical writing ("parallelization" is 15) - real prose measured at ~0%
+# on this signal, a fused-text sample measured ~22%.
+_FUSED_WORD_MIN_LEN = 16
+_FUSED_WORD_FULL_PENALTY_FRAC = 0.05
+
 
 def _max_consonant_run(word: str) -> int:
     run = best = 0
@@ -62,9 +75,11 @@ def score_text(text: str) -> float:
         plausible_shape = sum(
             1 for w in words if _max_consonant_run(w) <= _MAX_PLAUSIBLE_CONSONANT_RUN
         ) / len(words)
+        fused_frac = sum(1 for w in words if len(w) >= _FUSED_WORD_MIN_LEN) / len(words)
     else:
         common_frac = 0.0
         plausible_shape = 0.0
+        fused_frac = 0.0
 
     # common_frac is the strongest signal - real prose of any reasonable
     # length is dense with these words, garbage essentially never matches -
@@ -72,7 +87,15 @@ def score_text(text: str) -> float:
     # partially-garbled text (diluted common-word density) from scoring as
     # if it were clean.
     common_norm = min(common_frac / 0.20, 1.0)
-    score = common_norm * 0.6 + plausible_shape * 0.15 + alpha_frac * 0.15 + (1 - junk_frac) * 0.10
+    base_score = common_norm * 0.6 + plausible_shape * 0.15 + alpha_frac * 0.15 + (1 - junk_frac) * 0.10
+
+    # fused-word text can still score well on every signal above (enough
+    # isolated stopwords survive to look "dense enough"), so this needs to
+    # meaningfully drag the score down rather than just being one more
+    # averaged-in term - applied as a multiplicative penalty on top of the
+    # base score, not folded into the weighted average.
+    fused_penalty = min(fused_frac / _FUSED_WORD_FULL_PENALTY_FRAC, 1.0)
+    score = base_score * (1 - fused_penalty * 0.7)
     return max(0.0, min(1.0, score))
 
 
