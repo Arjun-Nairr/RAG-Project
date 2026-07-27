@@ -332,7 +332,9 @@
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -372,6 +374,27 @@
   }
 }
 
+.modal-icon {
+  width: 44px;
+  height: 44px;
+  line-height: 42px;
+  border-radius: 50%;
+  margin: 0 auto 14px;
+  font-size: 20px;
+}
+
+.modal-warn .modal-icon {
+  background: color-mix(in srgb, #f5a623 15%, var(--bg));
+  border: 1px solid color-mix(in srgb, #f5a623 45%, var(--border));
+  color: color-mix(in srgb, #f5a623 75%, var(--text-h));
+}
+
+.modal-block .modal-icon {
+  background: color-mix(in srgb, #e5484d 10%, var(--bg));
+  border: 1px solid color-mix(in srgb, #e5484d 35%, var(--border));
+  color: color-mix(in srgb, #e5484d 75%, var(--text-h));
+}
+
 .modal-box h3 {
   margin: 0 0 10px;
   font-size: 17px;
@@ -383,14 +406,6 @@
   color: var(--text);
   font-size: 13.5px;
   line-height: 1.55;
-}
-
-.modal-box.modal-warn h3 {
-  color: #d97706;
-}
-
-.modal-box.modal-block h3 {
-  color: #e5484d;
 }
 
 .modal-ok {

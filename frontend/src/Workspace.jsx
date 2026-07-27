@@ -141,6 +141,7 @@ function AnswerBubble({ message }) {
 const QUALITY_MODAL_COPY = {
   unreadable: {
     tone: 'block',
+    icon: '✕',
     title: "Couldn't read this document's text",
     body: (
       <>
@@ -153,6 +154,7 @@ const QUALITY_MODAL_COPY = {
   },
   low: {
     tone: 'warn',
+    icon: '!',
     title: 'This document may be unclear',
     body: (
       <>
@@ -169,6 +171,9 @@ function QualityModal({ level, onAck }) {
   return (
     <div className="modal-backdrop">
       <div className={`modal-box modal-${copy.tone}`}>
+        <div className="modal-icon" aria-hidden="true">
+          {copy.icon}
+        </div>
         <h3>{copy.title}</h3>
         <p>{copy.body}</p>
         <button className="btn modal-ok" onClick={onAck}>
