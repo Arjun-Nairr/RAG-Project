@@ -385,13 +385,8 @@ function Workspace({ studySet, onReset }) {
           {isUnreadable ? (
             <div className="thread">
               <div className="quality-banner quality-block">
-                <strong>Couldn't read this document's text.</strong>
-                <p>
-                  This looks like a scanned image or handwriting with no readable text
-                  layer, so there's nothing to search or answer from. You can still view
-                  the file on the right — try re-uploading a typed or OCR'd version to ask
-                  questions about it.
-                </p>
+                <strong>{QUALITY_MODAL_COPY.unreadable.title}</strong>
+                <p>{QUALITY_MODAL_COPY.unreadable.body}</p>
               </div>
             </div>
           ) : (

@@ -142,12 +142,6 @@
   cursor: not-allowed;
 }
 
-.btn-secondary {
-  background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-h);
-}
-
 .error-text {
   color: #e5484d;
   font-size: 14px;
@@ -177,11 +171,6 @@
 
 .result h2 {
   margin-bottom: 4px;
-}
-
-.result .file-list {
-  text-align: left;
-  margin-bottom: 8px;
 }
 
 /* ---------- Study-set workspace (two-pane) ---------- */
@@ -301,15 +290,6 @@
 .quality-banner {
   font-size: 13px;
   line-height: 1.5;
-}
-
-.quality-warn {
-  margin: 14px 20px 0;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: color-mix(in srgb, #f5a623 15%, var(--bg));
-  border: 1px solid color-mix(in srgb, #f5a623 45%, var(--border));
-  color: var(--text-h);
 }
 
 .quality-block {
