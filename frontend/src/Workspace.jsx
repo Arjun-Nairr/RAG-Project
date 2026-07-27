@@ -240,14 +240,15 @@ function Workspace({ studySet, onReset }) {
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return
-        setMessages(
-          (data.history || []).map((row) => ({
-            question: row.question,
-            answer: row.answer,
-            sources: row.sources || [],
-            streaming: false,
-          }))
-        )
+        const loaded = (data.history || []).map((row) => ({
+          question: row.question,
+          answer: row.answer,
+          sources: row.sources || [],
+          streaming: false,
+        }))
+        // don't let a slow-arriving fetch clobber a question the user already
+        // asked while it was in flight - only seed history into an empty thread
+        setMessages((prev) => (prev.length === 0 ? loaded : prev))
       })
       .catch(() => {})
     return () => {
