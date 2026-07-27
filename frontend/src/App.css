@@ -327,6 +327,78 @@
   max-width: 340px;
 }
 
+/* text-quality modal - blocks interaction until explicitly acknowledged */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: modal-fade 0.15s ease both;
+}
+
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 380px;
+  background: var(--bg);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  text-align: center;
+  animation: modal-pop 0.18s ease both;
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.modal-box h3 {
+  margin: 0 0 10px;
+  font-size: 17px;
+  color: var(--text-h);
+}
+
+.modal-box p {
+  margin: 0 0 20px;
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.modal-box.modal-warn h3 {
+  color: #d97706;
+}
+
+.modal-box.modal-block h3 {
+  color: #e5484d;
+}
+
+.modal-ok {
+  width: auto;
+  margin-top: 0;
+  padding: 9px 28px;
+}
+
 /* suggested starter questions */
 .prompt-chips {
   display: flex;

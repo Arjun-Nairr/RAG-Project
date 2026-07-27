@@ -138,9 +138,51 @@ function AnswerBubble({ message }) {
   )
 }
 
+const QUALITY_MODAL_COPY = {
+  unreadable: {
+    tone: 'block',
+    title: "Couldn't read this document's text",
+    body: (
+      <>
+        This looks like a scanned image or handwriting with no readable text layer,
+        so there's nothing to search or answer from. You can still view the file on
+        the right — try re-uploading a typed or OCR'd version to ask questions
+        about it.
+      </>
+    ),
+  },
+  low: {
+    tone: 'warn',
+    title: 'This document may be unclear',
+    body: (
+      <>
+        The extracted text looks unclear (common with scans, handwriting, or
+        heavy math notation) — answers may vary. You can still ask questions.
+      </>
+    ),
+  },
+}
+
+function QualityModal({ level, onAck }) {
+  const copy = QUALITY_MODAL_COPY[level]
+  if (!copy) return null
+  return (
+    <div className="modal-backdrop">
+      <div className={`modal-box modal-${copy.tone}`}>
+        <h3>{copy.title}</h3>
+        <p>{copy.body}</p>
+        <button className="btn modal-ok" onClick={onAck}>
+          OK
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function Workspace({ studySet, onReset }) {
   const isUnreadable = studySet.text_quality === 'unreadable'
   const isLowQuality = studySet.text_quality === 'low'
+  const qualityLevel = isUnreadable ? 'unreadable' : isLowQuality ? 'low' : null
 
   const [messages, setMessages] = useState([])
   const [question, setQuestion] = useState('')
@@ -148,6 +190,9 @@ function Workspace({ studySet, onReset }) {
   const [askError, setAskError] = useState('')
   const [activeFile, setActiveFile] = useState(studySet.files[0] || null)
   const [dragging, setDragging] = useState(false)
+  // shown once per study set (this component remounts on a fresh upload),
+  // requires an explicit OK - not a passive banner
+  const [qualityAcked, setQualityAcked] = useState(false)
   const threadRef = useRef(null)
 
   // reveal-pacing state (refs so the ticker isn't chasing React renders)
@@ -310,6 +355,9 @@ function Workspace({ studySet, onReset }) {
 
   return (
     <div className={`workspace ${dragging ? 'dragging' : ''}`}>
+      {qualityLevel && !qualityAcked && (
+        <QualityModal level={qualityLevel} onAck={() => setQualityAcked(true)} />
+      )}
       <PanelGroup direction="horizontal" autoSaveId="rag-workspace-split">
         <Panel className="pane pane-chat" defaultSize={42} minSize={26} maxSize={68} order={1}>
           <header className="pane-head">
@@ -324,13 +372,6 @@ function Workspace({ studySet, onReset }) {
               + New
             </button>
           </header>
-
-          {isLowQuality && (
-            <div className="quality-banner quality-warn">
-              This document's text looks unclear (common with scans or handwriting) —
-              answers may vary.
-            </div>
-          )}
 
           {isUnreadable ? (
             <div className="thread">
