@@ -21,7 +21,7 @@ PDFS_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "pdfs"
 # key -> (source path, display name, one-line description shown in the picker)
 DEMO_SPECS = {
     "clear": (PDFS_DIR / "attention_is_all_you_need.pdf", "Clear document", "Clean, well-grounded answers"),
-    "semi_clear": (DEMO_DIR / "semi_clear.pdf", "Semi-clear document", "See the quality warning in action"),
+    "semi_clear": (DEMO_DIR / "semi_clear.pdf", "Semi-clear document", "My own handwritten math notes - see the quality warning in action"),
     "unreadable": (DEMO_DIR / "unreadable.pdf", "Unreadable document", "See the hard block in action"),
 }
 
