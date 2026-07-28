@@ -21,27 +21,36 @@ function deriveDefaultName(fileList) {
   return `${stripExt(fileList[0])} +${fileList.length - 1} more`
 }
 
-const DEMO_ICONS = { clear: '📄', semi_clear: '⚠️', unreadable: '🚫' }
+// static - mirrors backend/app/main.py's DEMO_SPECS (key/name/description).
+// Kept here instead of fetched so the picker renders instantly regardless of
+// whether the backend is awake; only picking a demo actually needs it live.
+// If DEMO_SPECS ever changes, update this list to match.
+const DEMOS = [
+  { key: 'clear', icon: '📄', name: 'Clear document', description: 'Clean, well-grounded answers' },
+  {
+    key: 'semi_clear',
+    icon: '⚠️',
+    name: 'Semi-clear document',
+    description: 'My own handwritten math notes - see the quality warning in action',
+  },
+  { key: 'unreadable', icon: '🚫', name: 'Unreadable document', description: 'See the hard block in action' },
+]
 
-function DemoPicker({ demos, loading, error, onPick, onClose }) {
+function DemoPicker({ onPick, onClose }) {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-box demo-picker" onClick={(e) => e.stopPropagation()}>
         <h3>Try a demo</h3>
         <p>No PDF handy? Jump straight into a pre-loaded example.</p>
-        {loading && <p className="subtitle">Loading demos…</p>}
-        {error && <p className="error-text">{error}</p>}
-        {!loading && !error && (
-          <div className="demo-cards">
-            {demos.map((d) => (
-              <button key={d.key} className="demo-card" onClick={() => onPick(d)}>
-                <span className="demo-card-icon">{DEMO_ICONS[d.key] || '📄'}</span>
-                <span className="demo-card-name">{d.name}</span>
-                <span className="demo-card-desc">{d.description}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="demo-cards">
+          {DEMOS.map((d) => (
+            <button key={d.key} className="demo-card" onClick={() => onPick(d)}>
+              <span className="demo-card-icon">{d.icon}</span>
+              <span className="demo-card-name">{d.name}</span>
+              <span className="demo-card-desc">{d.description}</span>
+            </button>
+          ))}
+        </div>
         <button className="btn-ghost demo-close" onClick={onClose}>
           Cancel
         </button>
@@ -59,9 +68,6 @@ function App() {
   const inputRef = useRef(null)
 
   const [showDemos, setShowDemos] = useState(false)
-  const [demos, setDemos] = useState([])
-  const [demosLoading, setDemosLoading] = useState(false)
-  const [demosError, setDemosError] = useState('')
 
   const addFiles = useCallback((fileList) => {
     const pdfs = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.pdf'))
@@ -123,22 +129,6 @@ function App() {
     setStatus('idle')
   }
 
-  const openDemos = async () => {
-    setShowDemos(true)
-    setDemosLoading(true)
-    setDemosError('')
-    try {
-      const res = await fetch(`${API_BASE}/demo`)
-      if (!res.ok) throw new Error('Demos are still warming up - try again in a moment.')
-      const data = await res.json()
-      setDemos(data.demos || [])
-    } catch (err) {
-      setDemosError(String(err.message || err))
-    } finally {
-      setDemosLoading(false)
-    }
-  }
-
   const pickDemo = async (demo) => {
     setShowDemos(false)
     setStatus('uploading')
@@ -162,15 +152,7 @@ function App() {
 
   return (
     <div className="page">
-      {showDemos && (
-        <DemoPicker
-          demos={demos}
-          loading={demosLoading}
-          error={demosError}
-          onPick={pickDemo}
-          onClose={() => setShowDemos(false)}
-        />
-      )}
+      {showDemos && <DemoPicker onPick={pickDemo} onClose={() => setShowDemos(false)} />}
       <div className="card">
         <div className="brand">
           <BrandMark />
@@ -179,7 +161,7 @@ function App() {
         <h1>New study set</h1>
         <p className="subtitle">Upload the PDFs you want to ask questions about.</p>
         {status !== 'processing' && (
-          <button className="btn-ghost demo-trigger" onClick={openDemos}>
+          <button className="btn-ghost demo-trigger" onClick={() => setShowDemos(true)}>
             ✨ Try a demo
           </button>
         )}
