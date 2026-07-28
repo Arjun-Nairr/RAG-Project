@@ -3,7 +3,7 @@ import './App.css'
 import Workspace from './Workspace'
 import BrandMark from './BrandMark'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 
 function formatBytes(bytes) {
   if (bytes < 1024) return `${bytes} B`
@@ -139,12 +139,20 @@ function App() {
     }
   }
 
-  const pickDemo = (demo) => {
-    // pre-seeded and already ready - jump straight into the workspace, no
-    // upload or processing wait
-    setResult(demo)
-    setStatus('done')
+  const pickDemo = async (demo) => {
     setShowDemos(false)
+    setStatus('uploading')
+    try {
+      const res = await fetch(`${API_BASE}/demo/${demo.key}`, { method: 'POST' })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      setResult(data)
+      setStatus('processing')
+      pollStatus(data.id)
+    } catch (err) {
+      setResult({ error: String(err) })
+      setStatus('error')
+    }
   }
 
   // once a study set is ready, hand off to the full-screen two-pane workspace

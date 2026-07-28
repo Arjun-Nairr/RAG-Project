@@ -1,4 +1,5 @@
 import json
+import os
 import shutil
 from pathlib import Path
 
@@ -23,8 +24,6 @@ DEMO_SPECS = {
     "semi_clear": (DEMO_DIR / "semi_clear.pdf", "Semi-clear document", "See the quality warning in action"),
     "unreadable": (DEMO_DIR / "unreadable.pdf", "Unreadable document", "See the hard block in action"),
 }
-# key -> study_set dict, populated once at startup so demo clicks are instant
-DEMO_STUDY_SETS: dict[str, dict] = {}
 
 
 @app.on_event("startup")
@@ -36,26 +35,12 @@ def _ensure_db():
     except Exception as e:
         print(f"[warning] question-history DB unavailable at startup: {e}")
 
-
-@app.on_event("startup")
-def _seed_demos():
-    # processed once here (not per-click) so picking a demo is instant - same
-    # create_study_set + process_study_set path a real upload uses, just fed
-    # from a bundled file instead of one the user picked
-    for key, (source_path, name, _desc) in DEMO_SPECS.items():
-        try:
-            filename = source_path.name
-            study_set = study_sets.create_study_set(name, [filename])
-            target_dir = study_sets.study_set_dir(study_set["id"])
-            shutil.copyfile(source_path, target_dir / filename)
-            processing.process_study_set(study_set["id"])
-            DEMO_STUDY_SETS[key] = study_sets.get_study_set(study_set["id"])
-        except Exception as e:
-            print(f"[warning] failed to seed demo '{key}': {e}")
-
+# comma-separated - lets one deployment allow both a local dev frontend and
+# the real deployed one, e.g. "http://localhost:5173,https://my-app.vercel.app"
+_origins = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[o.strip() for o in _origins.split(",")],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -90,13 +75,31 @@ def get_study_sets():
 
 
 @app.get("/demo")
-def get_demo_study_sets():
-    demos = []
-    for key, (_source_path, _name, description) in DEMO_SPECS.items():
-        study_set = DEMO_STUDY_SETS.get(key)
-        if study_set is not None:
-            demos.append({**study_set, "key": key, "description": description})
-    return {"demos": demos}
+def get_demo_specs():
+    return {
+        "demos": [
+            {"key": key, "name": name, "description": description}
+            for key, (_source_path, name, description) in DEMO_SPECS.items()
+        ]
+    }
+
+
+@app.post("/demo/{key}")
+def create_demo_study_set(key: str, background_tasks: BackgroundTasks):
+    spec = DEMO_SPECS.get(key)
+    if spec is None:
+        raise HTTPException(status_code=404, detail="unknown demo")
+
+    source_path, name, _description = spec
+    filename = source_path.name
+    study_set = study_sets.create_study_set(name, [filename])
+
+    target_dir = study_sets.study_set_dir(study_set["id"])
+    shutil.copyfile(source_path, target_dir / filename)
+
+    background_tasks.add_task(processing.process_study_set, study_set["id"])
+
+    return study_set
 
 
 @app.get("/study-sets/{study_set_id}")

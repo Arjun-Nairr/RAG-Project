@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm'
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import BrandMark from './BrandMark'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000'
 const MOBILE_BREAKPOINT = 820
 
 // react-resizable-panels sizes its panes via inline styles tied to a fixed
