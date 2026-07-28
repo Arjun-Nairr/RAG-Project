@@ -915,6 +915,8 @@
 
 .mobile-workspace .pane.mobile-pane-active {
   display: flex;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ---------- visual identity + motion ---------- */
