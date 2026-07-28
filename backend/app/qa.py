@@ -4,7 +4,7 @@ from app import embedding, vector_store
 def retrieve(collection_name: str, question: str, top_k: int = 5) -> list[dict]:
     """Shared by the live /ask endpoint and every eval script - the one
     place that actually calls embed+query, so it's never copy-pasted."""
-    query_vector = embedding.embed([question])[0]
+    query_vector = embedding.embed([question], input_type="query")[0]
     return vector_store.query(collection_name, query_vector, top_k=top_k)
 
 

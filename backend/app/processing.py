@@ -26,7 +26,7 @@ def process_study_set(study_set_id: str) -> None:
         study_sets.set_text_quality(study_set_id, quality, score)
 
         if all_chunks:
-            vectors = embedding.embed(all_chunks)
+            vectors = embedding.embed(all_chunks, input_type="document")
             vector_store.add_chunks(study_set_id, all_chunks, vectors, all_sources)
 
         study_sets.update_status(study_set_id, "ready")

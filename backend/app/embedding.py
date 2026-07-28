@@ -1,28 +1,20 @@
 import os
 
-# The model is fully downloaded and cached locally after its first use, so
-# there is no legitimate reason for later loads to touch the network at all.
-# Forcing offline mode skips huggingface_hub's habit of re-probing the Hub on
-# every load (HEAD requests for optional multimodal config files that don't
-# apply to this model) - on this machine's network those probes hang for
-# minutes retrying through 504 timeouts before falling back to cache anyway.
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+# EMBEDDING_PROVIDER selects which implementation backs embed() - "local"
+# (default, no external API key needed), "huggingface" (what the deployed
+# instance runs, needs HUGGINGFACE_API_KEY), or "voyage" (evaluated first,
+# kept working but unused - see README for why huggingface won out). Callers
+# never see this switch - they only ever call embedding.embed(...).
+# stripped+lowercased - a stray trailing space or case mismatch from pasting
+# into a dashboard's env var field would otherwise silently fall through to
+# the local branch with no error, which is exactly what loads torch
+_PROVIDER = os.environ.get("EMBEDDING_PROVIDER", "local").strip().lower()
 
-from functools import lru_cache  # noqa: E402
+print(f"[embedding] EMBEDDING_PROVIDER={_PROVIDER!r}")
 
-import numpy as np  # noqa: E402
-from sentence_transformers import SentenceTransformer  # noqa: E402
-
-MODEL_NAME = "all-MiniLM-L6-v2"
-
-
-@lru_cache(maxsize=1)
-def get_model() -> SentenceTransformer:
-    # cached so the ~80MB model loads once per process, not once per call
-    return SentenceTransformer(MODEL_NAME)
-
-
-def embed(texts: list[str]) -> np.ndarray:
-    model = get_model()
-    return model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+if _PROVIDER == "huggingface":
+    from app.embedding_huggingface import embed  # noqa: F401
+elif _PROVIDER == "voyage":
+    from app.embedding_voyage import embed  # noqa: F401
+else:
+    from app.embedding_local import embed  # noqa: F401
