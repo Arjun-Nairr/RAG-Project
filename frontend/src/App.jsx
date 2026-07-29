@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './App.css'
 import Workspace from './Workspace'
 import BrandMark from './BrandMark'
@@ -68,6 +68,20 @@ function App() {
   const inputRef = useRef(null)
 
   const [showDemos, setShowDemos] = useState(false)
+
+  // most "uploading" requests resolve in well under a second - only mention
+  // a possible server wake-up once it's actually clear this one is slow, so
+  // the common (warm) case never sees an unnecessary "this could take a
+  // minute" message
+  const [slowConnect, setSlowConnect] = useState(false)
+  useEffect(() => {
+    if (status !== 'uploading') {
+      setSlowConnect(false)
+      return
+    }
+    const timer = setTimeout(() => setSlowConnect(true), 4000)
+    return () => clearTimeout(timer)
+  }, [status])
 
   const addFiles = useCallback((fileList) => {
     const pdfs = Array.from(fileList).filter((f) => f.name.toLowerCase().endsWith('.pdf'))
@@ -160,13 +174,29 @@ function App() {
         </div>
         <h1>New study set</h1>
         <p className="subtitle">Upload the PDFs you want to ask questions about.</p>
-        {status !== 'processing' && (
+        {status !== 'processing' && status !== 'uploading' && (
           <button className="btn-ghost demo-trigger" onClick={() => setShowDemos(true)}>
             ✨ Try a demo
           </button>
         )}
 
-        {status === 'processing' ? (
+        {status === 'uploading' ? (
+          <div className="result">
+            <div className="result-icon">
+              <span className="thinking-dots">
+                <i></i>
+                <i></i>
+                <i></i>
+              </span>
+            </div>
+            <h2>Connecting...</h2>
+            <p className="subtitle">
+              {slowConnect
+                ? "Still connecting — the server can take up to a minute to wake up if it's been idle for a while."
+                : 'Reaching the server...'}
+            </p>
+          </div>
+        ) : status === 'processing' ? (
           <div className="result">
             <div className="result-icon">
               <span className="thinking-dots">
@@ -232,14 +262,8 @@ function App() {
 
             {status === 'error' && <p className="error-text">{result.error}</p>}
 
-            <button
-              className="btn"
-              disabled={files.length === 0 || status === 'uploading'}
-              onClick={handleUpload}
-            >
-              {status === 'uploading'
-                ? 'Uploading...'
-                : `Upload ${files.length || ''} document${files.length === 1 ? '' : 's'}`}
+            <button className="btn" disabled={files.length === 0} onClick={handleUpload}>
+              Upload {files.length || ''} document{files.length === 1 ? '' : 's'}
             </button>
           </>
         )}
