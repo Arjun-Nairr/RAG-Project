@@ -487,11 +487,28 @@ function Workspace({ studySet, onReset }) {
         </div>
       )}
       {activeFile ? (
-        <iframe
-          className="pdf-frame"
-          title={activeFile}
-          src={`${API_BASE}/study-sets/${studySet.id}/files/${encodeURIComponent(activeFile)}`}
-        />
+        <>
+          {isMobile && (
+            // iOS Safari renders embedded (iframe) PDFs far more
+            // restrictively than a direct view - often just the current
+            // page, no reliable scroll/zoom. A real platform limitation,
+            // not something our CSS can fix - so hand off to the browser's
+            // own native PDF viewer instead of fighting the embedded one.
+            <a
+              className="btn-ghost pdf-open-tab"
+              href={`${API_BASE}/study-sets/${studySet.id}/files/${encodeURIComponent(activeFile)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Open PDF in new tab ↗
+            </a>
+          )}
+          <iframe
+            className="pdf-frame"
+            title={activeFile}
+            src={`${API_BASE}/study-sets/${studySet.id}/files/${encodeURIComponent(activeFile)}`}
+          />
+        </>
       ) : (
         <div className="viewer-empty">No file to display</div>
       )}

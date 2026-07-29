@@ -859,6 +859,13 @@
   background: var(--accent-bg);
 }
 
+.pdf-open-tab {
+  flex-shrink: 0;
+  margin: 10px 12px;
+  text-align: center;
+  text-decoration: none;
+}
+
 .pdf-frame {
   flex: 1;
   min-height: 0;
